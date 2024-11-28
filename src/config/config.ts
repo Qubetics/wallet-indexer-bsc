@@ -1,0 +1,517 @@
+import zookeeperConfig from "../helpers/zookeeper.helper";
+const name = 'qubetics';
+export const config = {
+  DB_USER: zookeeperConfig.config.DB_USER,
+  DB_HOST_READ: zookeeperConfig.config.DB_HOST_READ,
+  DB_HOST_WRITE: zookeeperConfig.config.DB_HOST_WRITE,
+  DB_NAME: zookeeperConfig.config.DB_NAME,
+  DB_PASSWORD: zookeeperConfig.config.DB_PASSWORD,
+  DB_PORT: zookeeperConfig.config.DB_PORT,
+  // DEPOSIT_WITHDRAW_PROCESS_BSC: zookeeperConfig.config.DEPOSIT_WITHDRAW_PROCESS_BSC,
+  BSC_WALLET_ADDRESS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_WALLET_ADDRESS}`,
+  // PENDING_WITHDRAWAL_TX_PROCESS_BSC: zookeeperConfig.config.PENDING_WITHDRAWAL_TX_PROCESS_BSC,
+  // RABBIT_MQ: zookeeperConfig.config.RABBIT_MQ,
+  KAFKA_BROKER: zookeeperConfig.config.KAFKA_BROKER,
+  KAFKA_CLIENT_ID: zookeeperConfig.config.KAFKA_CLIENT_ID,
+  REDIS_CONN: zookeeperConfig.config.REDIS_CONN,
+  MIN_BLOCK_CONFORMATIONS: zookeeperConfig.config.MIN_BSC_BLOCK_CONFORMATIONS,
+  TOKEN_TYPE_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_BSC}`,
+  TOKEN_TYPE721_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE721_BSC}`,
+  STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
+  //BSC_ADDRESSES_PENDING_BALANCE_UPDATE: zookeeperConfig.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE,
+  // added new
+  KEYS: {
+    FCM_PUSH: zookeeperConfig.config.FCM_PUSH
+  },
+  REDISKEYS: {
+    BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
+    OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
+    NEW_BLOCK_BSC: zookeeperConfig.config.NEW_BLOCK_BSC,
+    ALL_PROCESSES: zookeeperConfig.config.ALL_PROCESSES,
+    BSC_ERROR_LOGS: zookeeperConfig.config.BSC_ERROR_LOGS,
+    NODE_ALERT_BSC: zookeeperConfig.config.NODE_ALERT_BSC,
+    SPECIFIC_BLOCK_BSC: zookeeperConfig.config.SPECIFIC_BLOCK_BSC
+  },
+
+  // added till now
+  NODE: {
+    ETH_RPC_URL: zookeeperConfig.config.ETH_RPC_URL,
+    BTC_RPC_URL: zookeeperConfig.config.BTC_RPC_URL,
+    BTC_API_KEY: zookeeperConfig.config.BTC_API_KEY,
+    TRX_RPC_URL: zookeeperConfig.config.TRX_RPC_URL,
+    TRX_API_KEY: zookeeperConfig.config.TRX_API_KEY,
+    BNB_RPC_URL: zookeeperConfig.config.BNB_RPC_URL
+  },
+  /**
+   * KAFKA KEYS START
+   */
+  KAFKA_BLOCKS: {
+    BSC_BLOCK_TX_TOPIC: zookeeperConfig.config.BSC_BLOCK_TX_TOPIC,
+    BSC_BEHIND_BLOCK_TX_TOPIC: zookeeperConfig.config.BSC_BEHIND_BLOCK_TX_TOPIC,
+    BSC_BLOCK_TX_GROUP_ID: zookeeperConfig.config.BSC_BLOCK_TX_GROUP_ID,
+    BSC_BEHIND_BLOCK_TX_GROUP_ID: zookeeperConfig.config.BSC_BEHIND_BLOCK_TX_GROUP_ID
+  },
+  KAFKA_TRANSACTIONS: {
+    DEPOSIT_WITHDRAW_GROUP_ID: zookeeperConfig.config.BSC_DEPOSIT_WITHDRAW_GROUP_ID,
+    DEPOSIT_WITHDRAW_TOPIC: zookeeperConfig.config.BSC_DEPOSIT_WITHDRAW_TOPIC,
+    BSC_PENDING_WITHDRAWAL_TX_TOPIC: zookeeperConfig.config.BSC_PENDING_WITHDRAWAL_TX_TOPIC,
+    BSC_PENDING_WITHDRAWAL_TX_GROUP_ID: zookeeperConfig.config.BSC_PENDING_WITHDRAWAL_TX_GROUP_ID
+  },
+  KAFKA_BALANCE: {
+    BSC_PENDING_BALANCE_UPDATE_TOPIC: zookeeperConfig.config.BSC_PENDING_BALANCE_UPDATE_TOPIC,
+    BSC_PENDING_BALANCE_UPDATE_GROUP_ID: zookeeperConfig.config.BSC_PENDING_BALANCE_UPDATE_GROUP_ID
+  },
+
+  // TRANSACTIONS: {
+  //   bsc_all_blocks: zookeeperConfig.config.bsc_all_blocks,
+  //   bsc_behined_transactions: zookeeperConfig.config.bsc_behined_transactions,
+  //   bsc_transaction_consumer_count: zookeeperConfig.config.bsc_transaction_consumer_count
+  // },
+  MAILGUN: {
+    MAILGUN_API_KEY: zookeeperConfig.config.MAILGUN_API_KEY,
+    MAILGUN_DOMAIN: zookeeperConfig.config.MAILGUN_DOMAIN,
+    MAILGUN_BASE_URL: zookeeperConfig.config.MAILGUN_BASE_URL,
+    FROM_GMAIL: zookeeperConfig.config.FROM_GMAIL
+
+  },
+  NODE_ISSUE_ALERT_EMAIL: zookeeperConfig.config.NODE_ISSUE_ALERT_EMAIL,
+  READ_BEHINED_BLOCK_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.READ_BEHINED_BLOCK_BSC}`,
+  BLOCKS: zookeeperConfig.config.BLOCKS,
+
+  CONTRACT_ABI: [
+    {
+      constant: true,
+      inputs: [],
+      name: "name",
+      outputs: [{ name: "", type: "string" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [],
+      name: "stop",
+      outputs: [],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { name: "_spender", type: "address" },
+        { name: "_value", type: "uint256" },
+      ],
+      name: "approve",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "totalSupply",
+      outputs: [{ name: "", type: "uint256" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { name: "_from", type: "address" },
+        { name: "_to", type: "address" },
+        { name: "_value", type: "uint256" },
+      ],
+      name: "transferFrom",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "INITIAL_SUPPLY",
+      outputs: [{ name: "", type: "uint256" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "decimals",
+      outputs: [{ name: "", type: "uint8" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { name: "to", type: "address" },
+        { name: "value", type: "uint256" },
+      ],
+      name: "mint",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [{ name: "_value", type: "uint256" }],
+      name: "burn",
+      outputs: [],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { name: "_spender", type: "address" },
+        { name: "_subtractedValue", type: "uint256" },
+      ],
+      name: "decreaseApproval",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "decimalFactor",
+      outputs: [{ name: "", type: "uint256" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [{ name: "_owner", type: "address" }],
+      name: "balanceOf",
+      outputs: [{ name: "balance", type: "uint256" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "stopped",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "owner",
+      outputs: [{ name: "", type: "address" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "symbol",
+      outputs: [{ name: "", type: "string" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { name: "_to", type: "address" },
+        { name: "_value", type: "uint256" },
+      ],
+      name: "transfer",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [],
+      name: "start",
+      outputs: [],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [
+        { name: "_spender", type: "address" },
+        { name: "_addedValue", type: "uint256" },
+      ],
+      name: "increaseApproval",
+      outputs: [{ name: "", type: "bool" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [
+        { name: "_owner", type: "address" },
+        { name: "_spender", type: "address" },
+      ],
+      name: "allowance",
+      outputs: [{ name: "", type: "uint256" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: false,
+      inputs: [{ name: "newOwner", type: "address" }],
+      name: "transferOwnership",
+      outputs: [],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [{ name: "ownerAdrs", type: "address" }],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "constructor",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, name: "burner", type: "address" },
+        { indexed: false, name: "value", type: "uint256" },
+      ],
+      name: "Burn",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, name: "previousOwner", type: "address" },
+        { indexed: true, name: "newOwner", type: "address" },
+      ],
+      name: "OwnershipTransferred",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, name: "owner", type: "address" },
+        { indexed: true, name: "spender", type: "address" },
+        { indexed: false, name: "value", type: "uint256" },
+      ],
+      name: "Approval",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, name: "from", type: "address" },
+        { indexed: true, name: "to", type: "address" },
+        { indexed: false, name: "value", type: "uint256" },
+      ],
+      name: "Transfer",
+      type: "event",
+    },
+  ],
+
+
+  ERC721ABI: [
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: "address",
+          name: "owner",
+          type: "address",
+        },
+        {
+          indexed: true,
+          internalType: "address",
+          name: "approved",
+          type: "address",
+        },
+        {
+          indexed: true,
+          internalType: "uint256",
+          name: "tokenId",
+          type: "uint256",
+        },
+      ],
+      name: "Approval",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: "address",
+          name: "owner",
+          type: "address",
+        },
+        {
+          indexed: true,
+          internalType: "address",
+          name: "operator",
+          type: "address",
+        },
+        { indexed: false, internalType: "bool", name: "approved", type: "bool" },
+      ],
+      name: "ApprovalForAll",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, internalType: "address", name: "from", type: "address" },
+        { indexed: true, internalType: "address", name: "to", type: "address" },
+        {
+          indexed: true,
+          internalType: "uint256",
+          name: "tokenId",
+          type: "uint256",
+        },
+      ],
+      name: "Transfer",
+      type: "event",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "tokenId", type: "uint256" },
+      ],
+      name: "approve",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "player", type: "address" },
+        { internalType: "string", name: "tokenURI", type: "string" },
+      ],
+      name: "awardItem",
+      outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "from", type: "address" },
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "tokenId", type: "uint256" },
+      ],
+      name: "safeTransferFrom",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "from", type: "address" },
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "tokenId", type: "uint256" },
+        { internalType: "bytes", name: "_data", type: "bytes" },
+      ],
+      name: "safeTransferFrom",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "operator", type: "address" },
+        { internalType: "bool", name: "approved", type: "bool" },
+      ],
+      name: "setApprovalForAll",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "from", type: "address" },
+        { internalType: "address", name: "to", type: "address" },
+        { internalType: "uint256", name: "tokenId", type: "uint256" },
+      ],
+      name: "transferFrom",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    { inputs: [], stateMutability: "nonpayable", type: "constructor" },
+    {
+      inputs: [{ internalType: "address", name: "owner", type: "address" }],
+      name: "balanceOf",
+      outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+      name: "getApproved",
+      outputs: [{ internalType: "address", name: "", type: "address" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "owner", type: "address" },
+        { internalType: "address", name: "operator", type: "address" },
+      ],
+      name: "isApprovedForAll",
+      outputs: [{ internalType: "bool", name: "", type: "bool" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [],
+      name: "name",
+      outputs: [{ internalType: "string", name: "", type: "string" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+      name: "ownerOf",
+      outputs: [{ internalType: "address", name: "", type: "address" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [{ internalType: "bytes4", name: "interfaceId", type: "bytes4" }],
+      name: "supportsInterface",
+      outputs: [{ internalType: "bool", name: "", type: "bool" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [],
+      name: "symbol",
+      outputs: [{ internalType: "string", name: "", type: "string" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+      name: "tokenURI",
+      outputs: [{ internalType: "string", name: "", type: "string" }],
+      stateMutability: "view",
+      type: "function",
+    },
+  ]
+}
