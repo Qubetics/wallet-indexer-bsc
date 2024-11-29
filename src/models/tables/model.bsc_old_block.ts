@@ -29,11 +29,21 @@ let dataObj = {
     coin_family: {
         type: DataTypes.INTEGER,
         allowNull: false,
+    },
+    status: {
+        type: DataTypes.TINYINT,
+        allowNull: true,
     }
 };
 let dataObjIndex = {
     createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    updatedAt: 'updated_at',
+    indexes: [
+        {
+            unique: false,
+            fields: ["status"],
+        }
+    ]
 }
 
 
