@@ -82,7 +82,7 @@ class BscProcessHelper {
       // let dataToInsert: any = [];
       // for (let i: any = old_block; i <= current_block; i++) {
       // blocks.push(i)
-      let dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block }
+      let dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block, status: 0 }
       // }
       console.log("dataToInsert>>>>", dataToInsert)
       // await BscOldBLockModel.destroy({ where: { block_number: { [Op.in]: blocks } } })
@@ -289,11 +289,12 @@ class BscProcessHelper {
       return null;
     }
   }
-  
+
   public behindBlocks = async () => {
     try {
       let behindBlocks: any = await BscOldBLockModel.findOne({
         attributes: ['id', 'block_number', 'start_block', 'end_block'],
+        where: { status: 0 },
         raw: true,
         order: [['id', 'ASC']]
       })

@@ -32,7 +32,7 @@ let dataObj = {
     },
     status: {
         type: DataTypes.TINYINT,
-        allowNull: true,
+        allowNull: true
     }
 };
 let dataObjIndex = {

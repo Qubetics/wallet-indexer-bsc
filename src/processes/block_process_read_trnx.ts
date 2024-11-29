@@ -116,7 +116,7 @@ class Bsc_block_process {
                 }
             } else {
                 console.log("No blockinfo")
-                await BscOldBLockModel.create({ block_number: blockId, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: blockId, end_block: blockId })
+                await BscOldBLockModel.create({ block_number: blockId, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: blockId, end_block: blockId,status:0 })
             }
         } catch (err: any) {
             console.error("Error in getTxFromBlock:", (err as Error).message);
@@ -148,7 +148,8 @@ class Bsc_block_process {
                     let dataaaaa_exist: any = await bscProcessHelper.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(add_data))
                 } else {
                     console.log("id>>>>>>>>>>>", id)
-                    await BscOldBLockModel.destroy({ where: { id: id } })
+                    // await BscOldBLockModel.destroy({ where: { id: id } })
+                    await BscOldBLockModel.update({ status: 1 }, { where: { id: id } })
                     await bscProcessHelper.deleteKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC)
 
                     let behindBlocks: any = await bscProcessHelper.behindBlocks()
