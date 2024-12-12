@@ -29,7 +29,7 @@
     "bignumber.js": "^9.0.1",
     "dotenv": "^14.3.2",
     "express": "^4.17.1",
-    "fcm-node": "^1.6.1",
+    "firebase-admin": "^13.0.1",
     "kafkajs": "^2.2.4",
     "mysql2": "^2.3.0",
     "node-schedule": "^2.0.0",
