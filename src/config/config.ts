@@ -20,9 +20,9 @@ export const config = {
   STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
   //BSC_ADDRESSES_PENDING_BALANCE_UPDATE: zookeeperConfig.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE,
   // added new
-  KEYS: {
-    FCM_PUSH: zookeeperConfig.config.FCM_PUSH
-  },
+  // KEYS: {
+  //   FCM_PUSH: zookeeperConfig.config.FCM_PUSH
+  // },
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
     OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
