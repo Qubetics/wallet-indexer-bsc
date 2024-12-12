@@ -7,7 +7,7 @@
     "compile": "tsc",
     "server": "nodemon --max-old-space-size=2048 build/index.bsc.js",
     "dev": "concurrently \"npm run compile\" \"npm run server\"",
-    "start": "npm run compile && cp -r bn.js ./node_modules/number-to-bn/node_modules/bn.js/lib && node build/index.bsc.js"
+    "start": "npm run compile && cp -r bn.js ./node_modules/number-to-bn/node_modules/bn.js/lib && cp -a ./src/constants/firebase.admin.key.json ./build/constants/firebase.admin.key.json && node build/index.bsc.js"
   },
   "keywords": [
     "processes"
