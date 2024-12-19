@@ -36,9 +36,9 @@ class BscTxStatusUpdateProcess {
     const { getTransaction, getTransactionReceipt } = Blockchain_Helper.BSC_Web3.eth;
     try {
       let transaction: any = await getTransaction(data.tx_id);
-      let transactionReceipt: any = await getTransactionReceipt(data.tx_id);
       if (transaction && transaction?.blockNumber) {
         console.log("transaxtion>>>>>>>>", transaction.blockNumber)
+        let transactionReceipt: any = await getTransactionReceipt(data.tx_id);
         let gasReverted: number | undefined;
         let gasUsed: any = transactionReceipt.gasUsed
           ? transactionReceipt.gasUsed
