@@ -37,7 +37,7 @@ class BscTxStatusUpdateProcess {
     try {
       let transaction: any = await getTransaction(data.tx_id);
       let transactionReceipt: any = await getTransactionReceipt(data.tx_id);
-      if (transaction.blockNumber) {
+      if (transaction && transaction?.blockNumber) {
         console.log("transaxtion>>>>>>>>", transaction.blockNumber)
         let gasReverted: number | undefined;
         let gasUsed: any = transactionReceipt.gasUsed
