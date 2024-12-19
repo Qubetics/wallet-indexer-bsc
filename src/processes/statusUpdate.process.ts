@@ -186,7 +186,7 @@ class BscTxStatusUpdateProcess {
             )} ${coin_symbol.toUpperCase()} has been confirmed.`;
 
             let notifData: NotificationInterface = {
-              title: NotificationTypeEnum.WITHDRAW.toUpperCase(),
+              title: trnxTypeW.toUpperCase(),
               message: notiMsg,
               amount: amount,
               from_user_id: 0,
@@ -197,7 +197,7 @@ class BscTxStatusUpdateProcess {
               coin_id: trx_data?.coin?.coin_id,
               coin_family: trx_data?.coin?.coin_family,
               tx_type: tx_type,
-              notification_type: NotificationTypeEnum.WITHDRAW,
+              notification_type: trnxTypeW,
               state: "confirmed"
             };
             Utility_Helper.SendNotification(notifData);

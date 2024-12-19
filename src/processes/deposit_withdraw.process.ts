@@ -209,7 +209,7 @@ class BscDepositWithdrawProcess {
           tx_id: newTrnx.id,
           coin_symbol: coin.coin_symbol,
           coin_id: coin.coin_id,
-          coin_family: trx_data?.coin?.coin_family,
+          coin_family: trx_data?.coin_family,
           tx_type: tx_type,
           notification_type: NotificationTypeEnum.DEPOSIT,
           state: "confirmed"
@@ -267,7 +267,7 @@ class BscDepositWithdrawProcess {
           tx_type: tx_type,
           coin_symbol: coin.coin_symbol,
           coin_id: coin.coin_id,
-          coin_family: trx_data?.coin?.coin_family,
+          coin_family: trx_data?.coin_family,
           notification_type: NotificationTypeEnum.WITHDRAW,
           state: "confirmed"
         };
