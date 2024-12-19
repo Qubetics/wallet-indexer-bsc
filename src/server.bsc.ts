@@ -2,8 +2,8 @@ import { bscWithdrawDepositProcess, bscPendingWithdrawalProcess, bscTxStatusUpda
 import schedule from "node-schedule";
 class BSCStartProcess {
   constructor() {
-    // this.read_block_process()
-    // this.read_behined_block_process()
+    this.read_block_process()
+    this.read_behined_block_process()
     this.readSpecificBlock()
     this.consume_read_block_queue()
     this.bscWithdrawDepositProcess();
