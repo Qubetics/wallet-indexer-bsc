@@ -65,7 +65,7 @@ class Bsc_block_process {
             console.log("blockNumber", blockNumber)
             let block_updated: number = blockNumber + 1;
             await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, block_updated.toString());
-            console.log("blockNumber updated", block_updated)
+            // console.log("blockNumber updated", block_updated)
             console.table({
                 LATEST_BLOCK: blockNumber,
                 BLOCK_DIFFERENCE: toBlockNumber - blockNumber,
@@ -79,7 +79,7 @@ class Bsc_block_process {
     }
     public async getTxFromBlock(blockId: number, key: string) {
         const { getBlock } = Blockchain_Helper.BSC_Web3.eth;
-        console.log("blockId :::::", blockId)
+        // console.log("blockId :::::", blockId)
 
         try {
             const blockInfo = await getBlock(blockId, true);
@@ -93,7 +93,7 @@ class Bsc_block_process {
                 return; // Exit early if there are no transactions
             }
             const transactionPromises = blockInfo.transactions.map(async (tx) => {
-                console.log('tx.hash >>', tx.hash, 'blockId >>>', blockId);
+                // console.log('tx.hash >>', tx.hash, 'blockId >>>', blockId);
                 const data: blocks_trnx = {
                     block_number: blockId,
                     tx_id: tx.hash || '',
@@ -165,7 +165,7 @@ class Bsc_block_process {
             if (data_exist) {
                 let data_exists = JSON.parse(data_exist);
                 if (data_exists) {
-                    console.log("This block exist in redis read behined")
+                    // console.log("This block exist in redis read behined")
                     let { id, start_block, end_block } = data_exists;
                     // let id = data_exists.id
                     // let end_block = data_exists.end_block

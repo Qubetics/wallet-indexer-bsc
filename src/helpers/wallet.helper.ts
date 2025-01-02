@@ -7,8 +7,6 @@ import { CoinInterface, CoinsModel } from "../models";
 import WalletModel from "../models/tables/model.wallets";
 import { Blockchain_Helper } from "./blockchain.helper";
 import { Utility_Helper } from "./utility.helper";
-import utxo from "./utxo";
-
 class WalletHelper {
     public bsc_pending_balance_update_topic = config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
 
@@ -17,22 +15,9 @@ class WalletHelper {
             let balance: number | null = 0;
             if (coin) {
                 switch (coin.coin_family) {
-                    // case CoinFamilyEnum.ETH:
-                    //     balance = await Blockchain_Helper.ETH_Fetch_Balance(address, coin);
-                    //     break;
                     case CoinFamilyEnum.BNB:
                         balance = await Blockchain_Helper.fetch_bnb_balance(address, coin);
                         break;
-                    // case CoinFamilyEnum.BTC:
-                    //     balance = Number(await utxo.getUserBtcBalance(address));
-                    //     break;
-                    // // case CoinFamilyEnum.LTC:WalletModel.update
-                    // //     balance = Number(await utxo.getUserLtcBalance(address));
-                    // //     break;
-                    // case CoinFamilyEnum.TRON:
-                    //     balance = Number(await Blockchain_Helper.TRX_Fetch_Balance(address, coin))
-                    //     break;
-
                     default:
                         balance = 0;
                         break;
