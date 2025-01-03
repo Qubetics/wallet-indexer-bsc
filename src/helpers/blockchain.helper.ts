@@ -5,7 +5,6 @@ import { config } from '../config';
 import { AbiItem } from 'web3-utils';
 
 class BlockchainHelper {
-    // public REDIS_TOKENS: any = CONFIG.REDISKEYS.TOKENS;
     public BSC_Web3: Web3;
     public BNB_FULLNODE: string = config.config.NODE.BNB_RPC_URL;
 
