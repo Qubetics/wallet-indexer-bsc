@@ -15,6 +15,5 @@ export interface NotificationInterface {
   // resent_count?: number | null;
   view_status?: string | null;
   state: string | null;
-  cmc_id?: number;
   // coin_price_in_usd?: {}
 }
