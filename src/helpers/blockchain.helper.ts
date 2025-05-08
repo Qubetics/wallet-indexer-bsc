@@ -1,19 +1,18 @@
-import Web3 from 'web3';
 import { BooleanEnum, TokenStandard } from "../enum";
 import { Utility_Helper } from "./utility.helper";
 import { config } from '../config';
-import { AbiItem } from 'web3-utils';
+import { ethers } from 'ethers';
 
 class BlockchainHelper {
-    public BSC_Web3: Web3;
-    public BNB_FULLNODE: string = config.config.NODE.BNB_RPC_URL;
-
+    public provider: ethers.JsonRpcProvider;
+  
     constructor() {
-        /* BSC CASE*/
-        const bsc_provider = new Web3.providers.HttpProvider(this.BNB_FULLNODE);
-        this.BSC_Web3 = new Web3(bsc_provider);
+      this.provider = new ethers.JsonRpcProvider(config.config.NODE.BNB_RPC_URL || "");
+      this.initialize();
     }
 
+    public initialize() {}
+  
     //BNB
     public async fetch_bnb_balance(address: string, coin: any) {
         try {
@@ -44,18 +43,19 @@ class BlockchainHelper {
     public async bep20_token_balance(wallet_address: string, contract_address: string | null) {
         try {
             if (contract_address) {
-                const contract: any = await new this.BSC_Web3.eth.Contract(
-                    config.config.CONTRACT_ABI as AbiItem[],
-                    contract_address
+                const contract = new ethers.Contract(
+                  contract_address,
+                  config.config.CONTRACT_ABI,
+                  this.provider
                 );
-                const decimals = await contract.methods.decimals().call();
-                const balance = await contract.methods.balanceOf(wallet_address).call();
+                const decimals = Number(await contract.decimals())
+                const balance = await contract.balanceOf(wallet_address);
                 const tokenBalance = await Utility_Helper.bigNumberSafeMath(
                     balance, '/', Math.pow(10, decimals)
                 );
-                let tokBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
+                const tokBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
                 return Number(tokBalance);
-            }
+              }
             return 0;
         } catch (err: any) {
             console.error(`BscHelper BEP20_Token_Fetch_Balance error >>`, err);
@@ -68,11 +68,11 @@ class BlockchainHelper {
 
     public async bnb_coin_balance(address: string) {
         try {
-            const balance: string = await this.BSC_Web3.eth.getBalance(address);
+            const balance = await this.provider.getBalance(address);
             const tokenBalance = await Utility_Helper.bigNumberSafeMath(
                 balance, '/', Math.pow(10, 18)
             );
-            let coinBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
+            const coinBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
             return Number(coinBalance || 0);
         } catch (err: any) {
             console.error(`Bsc_Helper Coin_Fetch_Balance error >>`, err);
@@ -82,9 +82,10 @@ class BlockchainHelper {
         }
     }
 
-    public async convertWeiToBsc(value: number) {
+    public async convertWeiToBsc(value: number | string) {
         try {
-            return this.BSC_Web3.utils.fromWei(value.toString(), 'ether');
+            const valueAsString = value.toString();
+            return ethers.formatEther(valueAsString);;
         } catch (err: any) {
             console.error(`ConvertWeiToBsc error >>`, err);
             return 0;

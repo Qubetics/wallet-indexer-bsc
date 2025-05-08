@@ -2,12 +2,12 @@ import { config } from "../config/config";
 // import rabbitMq from "../config/rabbitMq";
 import { Blockchain_Helper, Utility_Helper } from "../helpers";
 import { blocks_trnx } from "../interfaces/global_helper";
-import { TransactionReceipt } from "web3-core";
 import bscProcessHelper from "./process.helper";
 import { TxType } from "../types/ERC20Tokens.types";
 import { TrnxTypeEnum } from "../enum";
 import { global_helper } from "../helpers/global_helper";
 import kafkaHelper from "../config/kafka.helper";
+import { ethers } from "ethers";
 
 class queue_transactions {
     public approval: string | null;
@@ -21,9 +21,9 @@ class queue_transactions {
     public bsc_deposit_withdraw_topic = config.KAFKA_TRANSACTIONS.DEPOSIT_WITHDRAW_TOPIC;
 
     constructor() {
-        this.approval = Blockchain_Helper.BSC_Web3.utils.sha3('Approval(address,address,uint256)');
-        this.swap = Blockchain_Helper.BSC_Web3.utils.sha3('Swap(address,uint256,uint256,uint256,uint256,address)');
-        this.transfer = Blockchain_Helper.BSC_Web3.utils.sha3('Transfer(address,address,uint256)');
+        this.approval = ethers.id('Approval(address,address,uint256)');
+        this.swap =  ethers.id('Swap(address,uint256,uint256,uint256,uint256,address)');
+        this.transfer =  ethers.id('Transfer(address,address,uint256)');
 
     }
 
@@ -76,8 +76,7 @@ class queue_transactions {
     public read_trnx = async (data: blocks_trnx) => {
         try {
             // console.log('consume_queue_trnx >>>>', data);
-            const { getTransactionReceipt } = Blockchain_Helper.BSC_Web3.eth;
-            const txReceipt = await getTransactionReceipt(data.tx_id);
+            const txReceipt = await Blockchain_Helper.provider.getTransactionReceipt(data.tx_id);
             if (txReceipt == null) {
                 if (Number(data.retry_count) < 6) {
                     data.retry_count = Number(data.retry_count) + 1;
@@ -86,7 +85,7 @@ class queue_transactions {
                 }
             }
             // console.log('txReceipt >>>', txReceipt)
-            if (txReceipt?.status === false && txReceipt !== null) {
+            if (txReceipt?.status == 0 && txReceipt !== null) {
                 console.log("(txReceipt.status === false && txReceipt !== null")
             } else {
                 await bsc_tx_status_deposit_withdraw.buildTx(txReceipt, data)
@@ -101,12 +100,13 @@ class queue_transactions {
             }
         }
     }
-    public buildTx = async (txReceipt: TransactionReceipt, data: blocks_trnx) => {
+    public buildTx = async (txReceipt: any, data: blocks_trnx) => {
         try {
             if (txReceipt.status == true && txReceipt.logs.length > 0) {
                 const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
+                const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
                 const gasInBsc = await Blockchain_Helper.convertWeiToBsc(
-                    await Utility_Helper.bigNumberSafeMath(gasUsed, '*', txReceipt.effectiveGasPrice)
+                    await Utility_Helper.bigNumberSafeMath(gasUsed, '*', effectiveGasPrice)
                 );
                 for await (const log of txReceipt.logs) {
                     const isToken: any = await bscProcessHelper.checkIfContract(log.address);
@@ -152,9 +152,10 @@ class queue_transactions {
     public check_bsc_deposit = async (data: blocks_trnx, txReceipt: any) => {
         try {
             const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
+            const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
             const gasInbsc = await Blockchain_Helper.convertWeiToBsc(
                 await Utility_Helper.bigNumberSafeMath(
-                    gasUsed, '*', txReceipt.effectiveGasPrice
+                    gasUsed, '*', effectiveGasPrice
                 )
             );
             // const { getTransaction } = Blockchain_Helper.Web3.eth;
@@ -167,7 +168,8 @@ class queue_transactions {
                 data.toAddress &&
                 data.block_number
             ) {
-                let amount = parseFloat(Blockchain_Helper.BSC_Web3.utils.fromWei(data.value, 'ether'));
+                const bscValue = await Blockchain_Helper.convertWeiToBsc((data.value ? data.value : 0));
+                const amount = parseFloat(bscValue.toString());
                 const txData: TxType = {
                     txId: data.tx_id,
                     fromAddress: data.fromAddress.toLowerCase(),

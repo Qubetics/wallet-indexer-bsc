@@ -7,6 +7,7 @@ import bscProcessHelper from "./process.helper";
 import { Op } from "sequelize";
 import { global_helper } from "../helpers/global_helper";
 import kafkaHelper from "../config/kafka.helper";
+import { ethers } from "ethers";
 class BscTxStatusUpdateProcess {
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
   public bsc_pending_withdrawal_tx_group_id = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_GROUP_ID;
@@ -33,35 +34,35 @@ class BscTxStatusUpdateProcess {
 
   public getTx = async (data: { tx_id: string; coin_id: number }) => {
     console.log('Pending data >>>>>>>', data);
-    const { getTransaction, getTransactionReceipt } = Blockchain_Helper.BSC_Web3.eth;
     try {
-      let transaction: any = await getTransaction(data.tx_id);
+      // Initialize provider
+      const provider = Blockchain_Helper.provider;
+
+      const transaction = await provider.getTransaction(data.tx_id);
       if (transaction && transaction?.blockNumber) {
         console.log("transaxtion>>>>>>>>", transaction.blockNumber)
-        let transactionReceipt: any = await getTransactionReceipt(data.tx_id);
-        let gasReverted: number | undefined;
-        let gasUsed: any = transactionReceipt.gasUsed
-          ? transactionReceipt.gasUsed
-          : 0;
-        let gasPrice: any = parseFloat(transaction.gasPrice) || 0;
-        let gasTotal: any = transaction.gas || 0;
-        let gasInBsc: number = Number(await Blockchain_Helper.convertWeiToBsc(
-          await Utility_Helper.bigNumberSafeMath(
-            gasUsed, '*', gasPrice
-          ))
-        );
+        let transactionReceipt: any = await provider.getTransactionReceipt(data.tx_id);
 
-        if (gasTotal > 0 && gasUsed > 0) {
+        let gasReverted: number | undefined;
+        const gasUsed = transactionReceipt?.gasUsed || BigInt(0);
+        const gasPrice = transaction.gasPrice || BigInt(0);
+        const gasTotal = transaction.gasLimit || BigInt(0);
+            
+        const gasInBsc: number = Number(
+          ethers.formatEther(gasUsed * gasPrice)
+      );
+      
+      if (gasTotal > BigInt(0) && gasUsed > BigInt(0)) {
           const gasDiff = gasTotal - gasUsed;
-          gasReverted = gasPrice * gasDiff;
-        }
+          gasReverted = Number(ethers.formatEther(gasPrice * gasDiff));
+      }
 
         if (transactionReceipt.status && transaction.blockHash != null) {
           const txUpdate = {
             coin_id: data.coin_id,
             status: "success",
             txid: transaction.hash,
-            gasReverted: gasReverted,
+            gasReverted: gasReverted !== undefined ? gasReverted : undefined,
             fromAddress: transactionReceipt.from.toLowerCase(),
             tx_fee: gasInBsc
           };
@@ -71,7 +72,7 @@ class BscTxStatusUpdateProcess {
             coin_id: data.coin_id,
             status: "failed",
             txid: transaction.hash,
-            gasReverted: gasReverted,
+            gasReverted: gasReverted !== undefined ? gasReverted : undefined,
             fromAddress: transactionReceipt.from.toLowerCase(),
             tx_fee: gasInBsc
           };

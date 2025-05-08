@@ -30,8 +30,7 @@ class BscProcessHelper {
   }
   public setBlocks = async (field: string, key: string, minBlockConfirmation: number, newBlock: number | null) => {
     try {
-      let { getBlockNumber } = Blockchain_Helper.BSC_Web3.eth;
-      let latestBlock = await getBlockNumber();
+      let latestBlock = await Blockchain_Helper.provider.getBlockNumber();
       console.log('latestBlock <<<', latestBlock);
       console.log('minBlockConfirmation <<<', minBlockConfirmation);
       console.log('key <<<', key);
