@@ -7,7 +7,7 @@ import { TxType } from "../types/ERC20Tokens.types";
 import { TrnxTypeEnum } from "../enum";
 import { global_helper } from "../helpers/global_helper";
 import kafkaHelper from "../config/kafka.helper";
-import { ethers } from "ethers";
+import { ethers, TransactionReceipt } from "ethers";
 
 class queue_transactions {
     public approval: string | null;
@@ -22,8 +22,8 @@ class queue_transactions {
 
     constructor() {
         this.approval = ethers.id('Approval(address,address,uint256)');
-        this.swap =  ethers.id('Swap(address,uint256,uint256,uint256,uint256,address)');
-        this.transfer =  ethers.id('Transfer(address,address,uint256)');
+        this.swap = ethers.id('Swap(address,uint256,uint256,uint256,uint256,address)');
+        this.transfer = ethers.id('Transfer(address,address,uint256)');
 
     }
 
@@ -76,18 +76,17 @@ class queue_transactions {
     public read_trnx = async (data: blocks_trnx) => {
         try {
             // console.log('consume_queue_trnx >>>>', data);
-            const txReceipt = await Blockchain_Helper.provider.getTransactionReceipt(data.tx_id);
-            if (txReceipt == null) {
-                if (Number(data.retry_count) < 6) {
-                    data.retry_count = Number(data.retry_count) + 1;
-                    // rabbitMq.send_tx_to_queue(config.TRANSACTIONS.bsc_behined_transactions, Buffer.from(JSON.stringify(data)))
-                    await kafkaHelper.produceMessage(this.bsc_behind_block_tx_topic, data)
-                }
+            const txReceipt: TransactionReceipt | null = await Blockchain_Helper.provider.getTransactionReceipt(data.tx_id);
+            if (txReceipt == null && Number(data.retry_count) < 6) {
+                data.retry_count = Number(data.retry_count) + 1;
+                // rabbitMq.send_tx_to_queue(config.TRANSACTIONS.bsc_behined_transactions, Buffer.from(JSON.stringify(data)))
+                await kafkaHelper.produceMessage(this.bsc_behind_block_tx_topic, data)
+                return false;
             }
             // console.log('txReceipt >>>', txReceipt)
-            if (txReceipt?.status == 0 && txReceipt !== null) {
+            if (txReceipt !== null && txReceipt.status == 0) {
                 console.log("(txReceipt.status === false && txReceipt !== null")
-            } else {
+            } else if (txReceipt) {
                 await bsc_tx_status_deposit_withdraw.buildTx(txReceipt, data)
             }
         } catch (error: any) {
@@ -100,13 +99,17 @@ class queue_transactions {
             }
         }
     }
-    public buildTx = async (txReceipt: any, data: blocks_trnx) => {
+    public buildTx = async (txReceipt: TransactionReceipt, data: blocks_trnx) => {
         try {
-            if (txReceipt.status == true && txReceipt.logs.length > 0) {
-                const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
-                const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
+            if (txReceipt.status == 0 && txReceipt.logs.length > 0) {
+                const gasUsed = txReceipt.gasUsed ? Number(txReceipt.gasUsed) : 0;
+                const hexToNumberGasPrice: any = txReceipt?.gasPrice ? Number(txReceipt.gasPrice) : 0;
+                const gasPrice = Number(ethers.formatUnits(hexToNumberGasPrice.toString(), 9));
+
+                // const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
+                // const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
                 const gasInBsc = await Blockchain_Helper.convertWeiToBsc(
-                    await Utility_Helper.bigNumberSafeMath(gasUsed, '*', effectiveGasPrice)
+                    await Utility_Helper.bigNumberSafeMath(gasUsed, '*', gasPrice)
                 );
                 for await (const log of txReceipt.logs) {
                     const isToken: any = await bscProcessHelper.checkIfContract(log.address);
@@ -149,25 +152,27 @@ class queue_transactions {
             await global_helper.save_error_logs('Bsc_buildTx', error.message)
         }
     };
-    public check_bsc_deposit = async (data: blocks_trnx, txReceipt: any) => {
+    public check_bsc_deposit = async (data: blocks_trnx, txReceipt: TransactionReceipt) => {
         try {
-            const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
-            const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
-            const gasInbsc = await Blockchain_Helper.convertWeiToBsc(
-                await Utility_Helper.bigNumberSafeMath(
-                    gasUsed, '*', effectiveGasPrice
-                )
-            );
+
             // const { getTransaction } = Blockchain_Helper.Web3.eth;
             // const transaction = await getTransaction(txId);
 
             /** for check the bsc deposit */
             if (
-                txReceipt.status == true,
+                // txReceipt.status == true,
                 data.value !== '0' &&
                 data.toAddress &&
                 data.block_number
             ) {
+                const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
+                const effectiveGasPrice: number = Number(txReceipt.gasPrice) || 0;
+                const gasPrice = Number(ethers.formatUnits(effectiveGasPrice.toString(), 9));
+                const gasInbsc = await Blockchain_Helper.convertWeiToBsc(
+                    await Utility_Helper.bigNumberSafeMath(
+                        gasUsed, '*', gasPrice
+                    )
+                );
                 const bscValue = await Blockchain_Helper.convertWeiToBsc((data.value ? data.value : 0));
                 const amount = parseFloat(bscValue.toString());
                 const txData: TxType = {
