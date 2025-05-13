@@ -7,7 +7,7 @@
     "compile": "tsc",
     "server": "nodemon --max-old-space-size=2048 build/index.bsc.js",
     "dev": "concurrently \"npm run compile\" \"npm run server\"",
-    "start": "npm run compile && cp -r bn.js ./node_modules/number-to-bn/node_modules/bn.js/lib && node build/index.bsc.js"
+    "start": "npm run compile && node build/index.bsc.js"
   },
   "keywords": [
     "processes"
@@ -42,9 +42,7 @@
     "tronweb": "^4.4.0",
     "tronweb-typings": "^1.0.1",
     "ts-node": "^10.1.0",
-    "typescript": "^4.3.5",
-    "web3": "^1.4.0",
-    "web3-utils": "^1.4.0"
+    "typescript": "^4.3.5"
   },
   "devDependencies": {
     "@types/node-zookeeper-client": "^0.2.8"
