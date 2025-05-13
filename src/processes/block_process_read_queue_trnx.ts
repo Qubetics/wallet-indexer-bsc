@@ -104,13 +104,15 @@ class queue_transactions {
             if (txReceipt.status == 0 && txReceipt.logs.length > 0) {
                 const gasUsed = txReceipt.gasUsed ? Number(txReceipt.gasUsed) : 0;
                 const hexToNumberGasPrice: any = txReceipt?.gasPrice ? Number(txReceipt.gasPrice) : 0;
-                const gasPrice = Number(ethers.formatUnits(hexToNumberGasPrice.toString(), 9));
+                //const gasPrice = Number(ethers.formatUnits(hexToNumberGasPrice.toString(), 9));
 
                 // const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
                 // const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
-                const gasInBsc = await Blockchain_Helper.convertWeiToBsc(
-                    await Utility_Helper.bigNumberSafeMath(gasUsed, '*', gasPrice)
-                );
+                const txFee = await Utility_Helper.bigNumberSafeMath(gasUsed, '*', hexToNumberGasPrice);
+                // console.log('txFee >>>', txFee);
+                const gasInBsc = await Blockchain_Helper.convertWeiToBsc(txFee);
+                // console.log('gasInBsc >>>', gasInBsc);
+
                 for await (const log of txReceipt.logs) {
                     const isToken: any = await bscProcessHelper.checkIfContract(log.address);
                     if (isToken !== null && log.topics[2] !== undefined) {
@@ -166,14 +168,24 @@ class queue_transactions {
                 data.block_number
             ) {
                 const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
+                // console.log('gasUsed >>', gasUsed);
                 const effectiveGasPrice: number = Number(txReceipt.gasPrice) || 0;
-                const gasPrice = Number(ethers.formatUnits(effectiveGasPrice.toString(), 9));
-                const gasInbsc = await Blockchain_Helper.convertWeiToBsc(
-                    await Utility_Helper.bigNumberSafeMath(
-                        gasUsed, '*', gasPrice
-                    )
-                );
+                // console.log('effectiveGasPrice >>.', effectiveGasPrice);
+
+                //const gasPrice = Number(ethers.formatUnits(effectiveGasPrice.toString(), 9));
+                // console.log('gasPrice >>.', effectiveGasPrice);
+                const txFee = await Utility_Helper.bigNumberSafeMath(
+                    gasUsed, '*', effectiveGasPrice
+                )
+                // console.log('txFee >>.', txFee);
+                const gasInbsc = await Blockchain_Helper.convertWeiToBsc(txFee);
+                // console.log('gasInbsc >>.', gasInbsc);
+                // console.log('data.tx_id >>.', data.tx_id);
+
+                // console.log('data.value >>.', data.value);
                 const bscValue = await Blockchain_Helper.convertWeiToBsc((data.value ? data.value : 0));
+                // console.log('bscValue >>.', bscValue);
+
                 const amount = parseFloat(bscValue.toString());
                 const txData: TxType = {
                     txId: data.tx_id,

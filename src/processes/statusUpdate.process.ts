@@ -47,10 +47,8 @@ class BscTxStatusUpdateProcess {
         const gasUsed = transactionReceipt?.gasUsed || BigInt(0);
         const gasPrice = transaction.gasPrice || BigInt(0);
         const gasTotal = transaction.gasLimit || BigInt(0);
-
-        const gasInBsc: number = Number(
-          ethers.formatEther(gasUsed * gasPrice)
-        );
+        const txFee = await Utility_Helper.bigNumberSafeMath(gasUsed, '*', gasPrice);
+        const gasInBsc: number = Number(ethers.formatEther(txFee));
 
         if (gasTotal > BigInt(0) && gasUsed > BigInt(0)) {
           const gasDiff = gasTotal - gasUsed;
