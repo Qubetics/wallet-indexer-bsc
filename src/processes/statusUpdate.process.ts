@@ -51,8 +51,10 @@ class BscTxStatusUpdateProcess {
         const gasInBsc: number = Number(ethers.formatEther(txFee));
 
         if (gasTotal > BigInt(0) && gasUsed > BigInt(0)) {
-          const gasDiff = gasTotal - gasUsed;
-          gasReverted = Number(ethers.formatEther(gasPrice * gasDiff));
+          const gasDiff = await Utility_Helper.bigNumberSafeMath(gasTotal, '-', gasUsed);
+          // const gasDiff = gasTotal - gasUsed;
+          const reverted = await Utility_Helper.bigNumberSafeMath(gasPrice, '*', gasDiff);
+          gasReverted = Number(ethers.formatEther(reverted));
         }
 
         if (transactionReceipt?.status && transaction.blockHash != null) {
