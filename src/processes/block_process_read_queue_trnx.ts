@@ -83,36 +83,38 @@ class queue_transactions {
                 const gasInBsc = await Blockchain_Helper.convertWeiToBsc(txFee);
 
                 for await (const log of txReceipt.logs) {
-                    const isToken: any = await bscProcessHelper.checkIfContract(log.address);
-                    if (isToken !== null && log.topics[2] !== undefined) {
-                        if (log?.topics && log?.topics[0] == this.approval) {
+                    if (log?.topics && log.topics[2] !== undefined) {
+                        if (log?.topics[0] == this.approval) {
                             continue;
-                        } else if (log?.topics && log?.topics[0] == this.transfer) {
-                            const decimalPrecision = isToken.decimals.toString().length - 1;
-                            let finalAmount = await Utility_Helper.bigNumberSafeMath(log.data, '/', Math.pow(10, decimalPrecision))
-                            finalAmount = await Utility_Helper.exponentialToDecimal(finalAmount)
-                            let toAddress: string = '0x' + log.topics[2].substring(26, log.topics[2].length);
-                            /* in case of swap trnx */
-                            let fromAddress: string = '0x' + log.topics[1].substring(26, log.topics[1].length);
-                            const txData: TxType = {
-                                txId: log.transactionHash,
-                                fromAddress: fromAddress,
-                                toAddress: toAddress,
-                                token: isToken,
-                                amount: finalAmount,
-                                blockId: log.blockNumber,
-                                isNFTToken: false,
-                                txType: null,
-                                trnx_fee: Number(gasInBsc)
-                            };
-                            await this.checkAddressInDB(txData);
+                        } else if (log?.topics[0] == this.transfer) {
+                            const isToken: any = await bscProcessHelper.checkIfContract(log.address);
+                            if (isToken) {
+                                const decimalPrecision = isToken.decimals.toString().length - 1;
+                                let finalAmount = await Utility_Helper.bigNumberSafeMath(log.data, '/', Math.pow(10, decimalPrecision))
+                                finalAmount = await Utility_Helper.exponentialToDecimal(finalAmount)
+                                let toAddress: string = '0x' + log.topics[2].substring(26, log.topics[2].length);
+                                /* in case of swap trnx */
+                                let fromAddress: string = '0x' + log.topics[1].substring(26, log.topics[1].length);
+                                const txData: TxType = {
+                                    txId: log.transactionHash,
+                                    fromAddress: fromAddress,
+                                    toAddress: toAddress,
+                                    token: isToken,
+                                    amount: finalAmount,
+                                    blockId: log.blockNumber,
+                                    isNFTToken: false,
+                                    txType: null,
+                                    trnx_fee: Number(gasInBsc)
+                                };
+                                await this.checkAddressInDB(txData);
+                            } else if (isToken == null) {
+                                await bsc_tx_status_deposit_withdraw.check_bsc_deposit(data, txReceipt)
+                            }
                         }
                     }
                     /** swap transaction then also check bsc */
                     if (log?.topics && log?.topics[0] == this.swap) {
                         await bsc_tx_status_deposit_withdraw.check_bsc_deposit(data, txReceipt);
-                    } else if (isToken == null && log.topics[2] !== undefined && log?.topics[0] == this.transfer) {
-                        await bsc_tx_status_deposit_withdraw.check_bsc_deposit(data, txReceipt)
                     }
                 }
             } else {
