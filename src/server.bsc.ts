@@ -9,7 +9,7 @@ class BSCStartProcess {
     this.bscWithdrawDepositProcess();
     this.getPendingWithdrawalTxProcess();
     this.updateTxStatusProcess();
-    // this.BSCPendingBalanceUpdate();
+    this.BSCPendingBalanceUpdate();
     // this.testing_node()
   }
   public read_block_process() {
