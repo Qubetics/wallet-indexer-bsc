@@ -3,12 +3,12 @@ import schedule from "node-schedule";
 class BSCStartProcess {
   constructor() {
     this.read_block_process()
-    // this.read_behined_block_process()
-    // this.readSpecificBlock()
+    this.read_behined_block_process()
+    this.readSpecificBlock()
     this.consume_read_block_queue()
     this.bscWithdrawDepositProcess();
-    // this.getPendingWithdrawalTxProcess();
-    // this.updateTxStatusProcess();
+    this.getPendingWithdrawalTxProcess();
+    this.updateTxStatusProcess();
     // this.BSCPendingBalanceUpdate();
     // this.testing_node()
   }

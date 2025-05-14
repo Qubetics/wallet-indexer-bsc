@@ -15,7 +15,6 @@ class BscProcessHelper {
 
   constructor() {
     this.fetchERC20Tokens();
-    // this.fetchERC721Tokens();
     this.fetchWalletAddress();
   }
   public getKeyValuePair = async (keyName: string, field: string) => {
@@ -77,26 +76,10 @@ class BscProcessHelper {
       } else {
         await this.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.NODE_ALERT_BSC, '0')
       }
-      // let blocks: any = [];
-      // let dataToInsert: any = [];
-      // for (let i: any = old_block; i <= current_block; i++) {
-      // blocks.push(i)
       let dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block, status: 0 }
-      // }
       console.log("dataToInsert>>>>", dataToInsert)
-      // await BscOldBLockModel.destroy({ where: { block_number: { [Op.in]: blocks } } })
       await BscOldBLockModel.create(dataToInsert)
       return true;
-      // REDIS BASED
-      // for (let i: any = old_block; i <= current_block; i++) {
-      //   let data_exist: any = await this.getKeyValuePair(config.READ_BEHINED_BLOCK_BSC, i.toString())
-      //   if (data_exist) {
-      //     console.log("This block exist in redis read behined", i)
-      //   } else {
-      //     await this.setKeyValuePair(config.READ_BEHINED_BLOCK_BSC, i.toString(), i.toString())
-      //   }
-      // }
-      // return true;
     } catch (err: any) {
       console.error("💥 ~ Error in diff_blocks_add_in_redis.", err)
       await global_helper.save_error_logs('BSC_diff_blocks_add_in_db', err.message)
@@ -104,31 +87,6 @@ class BscProcessHelper {
     }
   }
 
-  // public async getLastBlockProcessed(blockNumber: number) {
-  //   try {
-  //     const getAsync = promisify(redisClient.get).bind(redisClient);
-  //     const value = await getAsync(config.LAST_BLOCK_NUMBER_BSC || "");
-  //     if (value) return parseInt(value);
-  //     redisClient.set(
-  //       config.LAST_BLOCK_NUMBER_BSC || "",
-  //       blockNumber.toString()
-  //     );
-  //   } catch (error: any) {
-  //     console.error('getLastBlockProcessed >>>', error);
-  //   }
-  // }
-
-  // public async updateLastBlockProcessed(lastBlockProcessed: number) {
-  //   try {
-  //     const updatedBlockNumber = ++lastBlockProcessed;
-  //     redisClient.set(
-  //       config.LAST_BLOCK_NUMBER_BSC || "",
-  //       updatedBlockNumber.toString()
-  //     );
-  //   } catch (error: any) {
-  //     console.error('updateLastBlockProcessed >>>>', error)
-  //   }
-  // }
   public getHashTable = async (keyName: string) => {
     try {
       const getAsync: any = promisify(redisClient.hvals).bind(redisClient)
@@ -300,7 +258,6 @@ class BscProcessHelper {
       if (behindBlocks) {
         let add_data = {
           id: behindBlocks.id,
-          // block_number: behindBlocks.block_number,
           start_block: behindBlocks.start_block,
           end_block: behindBlocks.end_block,
           diff: behindBlocks.end_block - behindBlocks.start_block

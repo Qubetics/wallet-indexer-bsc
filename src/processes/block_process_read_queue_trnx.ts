@@ -1,5 +1,4 @@
 import { config } from "../config/config";
-// import rabbitMq from "../config/rabbitMq";
 import { Blockchain_Helper, Utility_Helper } from "../helpers";
 import { blocks_trnx } from "../interfaces/global_helper";
 import bscProcessHelper from "./process.helper";
@@ -33,8 +32,6 @@ class queue_transactions {
 
         await consumer.run({
             eachMessage: ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
-                // console.log("🚀 ~ startBlockTxQueue topic", topic);
-                // console.log("🚀 ~ startBlockTxQueue message.value", message.value.toString());
                 this.read_trnx(JSON.parse(message.value.toString()))
             }
         }).catch((err: Error) => {
@@ -48,8 +45,6 @@ class queue_transactions {
 
         await consumer.run({
             eachMessage: ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
-                // console.log("🚀 ~ startBehindBlockTxQueue topic", topic);
-                // console.log("🚀 ~ startBehindBlockTxQueue message.value", message.value.toString());
                 this.read_trnx(JSON.parse(message.value.toString()))
             }
         }).catch((err: Error) => {
@@ -57,33 +52,14 @@ class queue_transactions {
         });
     };
 
-    // public consume_queue_trnx = async () => {
-
-    //     // Latest transactions
-    //     rabbitMq.only_assert_queue(config.TRANSACTIONS.bsc_all_blocks);
-    //     console.error(`RABBITMQ_BLOCK_ALL_TRNX_PROCESS >>>`, config.TRANSACTIONS.bsc_all_blocks);
-    //     // rabbitMq.only_consume_queue(config.TRANSACTIONS.bsc_all_blocks, this.read_trnx);
-    //     for (let i = 1; i <= Number(config.TRANSACTIONS.bsc_transaction_consumer_count); i++) {
-    //         rabbitMq.only_consume_queue(config.TRANSACTIONS.bsc_all_blocks, this.read_trnx);
-    //         // RabbitMq.consumeQueue(this.RABBITMQ_BLOCK_ALL_TRNX_PROCESS, this.GetTxDetail);
-    //     }
-    //     // Behined transactions
-    //     rabbitMq.only_assert_queue(config.TRANSACTIONS.bsc_behined_transactions);
-    //     console.error(`RABBITMQ_BLOCK_ALL_TRNX_PROCESS >>>`, config.TRANSACTIONS.bsc_behined_transactions);
-    //     rabbitMq.only_consume_queue(config.TRANSACTIONS.bsc_behined_transactions, this.read_trnx);
-    //     //==========================================================
-    // }
     public read_trnx = async (data: blocks_trnx) => {
         try {
-            // console.log('consume_queue_trnx >>>>', data);
             const txReceipt: TransactionReceipt | null = await Blockchain_Helper.provider.getTransactionReceipt(data.tx_id);
             if (txReceipt == null && Number(data.retry_count) < 6) {
                 data.retry_count = Number(data.retry_count) + 1;
-                // rabbitMq.send_tx_to_queue(config.TRANSACTIONS.bsc_behined_transactions, Buffer.from(JSON.stringify(data)))
                 await kafkaHelper.produceMessage(this.bsc_behind_block_tx_topic, data)
                 return false;
             }
-            // console.log('txReceipt >>>', txReceipt)
             if (txReceipt !== null && txReceipt.status == 0) {
                 console.log("(txReceipt.status === false && txReceipt !== null")
             } else if (txReceipt) {
@@ -94,7 +70,6 @@ class queue_transactions {
             if (Number(data.retry_count) < 6) {
                 data.retry_count = Number(data.retry_count) + 1;
                 console.log("Adding transaction in queue>>>", data.retry_count, "transaction id>>>", data)
-                // rabbitMq.send_tx_to_queue(config.TRANSACTIONS.bsc_behined_transactions, Buffer.from(JSON.stringify(data)))
                 await kafkaHelper.produceMessage(this.bsc_behind_block_tx_topic, data)
             }
         }
@@ -104,14 +79,8 @@ class queue_transactions {
             if (txReceipt.status == 0 && txReceipt.logs.length > 0) {
                 const gasUsed = txReceipt.gasUsed ? Number(txReceipt.gasUsed) : 0;
                 const hexToNumberGasPrice: any = txReceipt?.gasPrice ? Number(txReceipt.gasPrice) : 0;
-                //const gasPrice = Number(ethers.formatUnits(hexToNumberGasPrice.toString(), 9));
-
-                // const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
-                // const effectiveGasPrice: number = txReceipt?.effectiveGasPrice ? txReceipt?.effectiveGasPrice : 0;
                 const txFee = await Utility_Helper.bigNumberSafeMath(gasUsed, '*', hexToNumberGasPrice);
-                // console.log('txFee >>>', txFee);
                 const gasInBsc = await Blockchain_Helper.convertWeiToBsc(txFee);
-                // console.log('gasInBsc >>>', gasInBsc);
 
                 for await (const log of txReceipt.logs) {
                     const isToken: any = await bscProcessHelper.checkIfContract(log.address);
@@ -156,35 +125,19 @@ class queue_transactions {
     };
     public check_bsc_deposit = async (data: blocks_trnx, txReceipt: TransactionReceipt) => {
         try {
-
-            // const { getTransaction } = Blockchain_Helper.Web3.eth;
-            // const transaction = await getTransaction(txId);
-
             /** for check the bsc deposit */
             if (
-                // txReceipt.status == true,
                 data.value !== '0' &&
                 data.toAddress &&
                 data.block_number
             ) {
                 const gasUsed = txReceipt.gasUsed ? txReceipt.gasUsed : 0;
-                // console.log('gasUsed >>', gasUsed);
                 const effectiveGasPrice: number = Number(txReceipt.gasPrice) || 0;
-                // console.log('effectiveGasPrice >>.', effectiveGasPrice);
-
-                //const gasPrice = Number(ethers.formatUnits(effectiveGasPrice.toString(), 9));
-                // console.log('gasPrice >>.', effectiveGasPrice);
                 const txFee = await Utility_Helper.bigNumberSafeMath(
                     gasUsed, '*', effectiveGasPrice
                 )
-                // console.log('txFee >>.', txFee);
                 const gasInbsc = await Blockchain_Helper.convertWeiToBsc(txFee);
-                // console.log('gasInbsc >>.', gasInbsc);
-                // console.log('data.tx_id >>.', data.tx_id);
-
-                // console.log('data.value >>.', data.value);
                 const bscValue = await Blockchain_Helper.convertWeiToBsc((data.value ? data.value : 0));
-                // console.log('bscValue >>.', bscValue);
 
                 const amount = parseFloat(bscValue.toString());
                 const txData: TxType = {
@@ -234,9 +187,6 @@ class queue_transactions {
     public addTxToQueue = async (data: TxType, queueName: string) => {
         try {
             await kafkaHelper.produceMessage(queueName, data);
-            // rabbitMq.send_tx_to_queue(queueName, Buffer.from(JSON.stringify(data)))
-            // await rabbitMq.assertQueue(queueName);
-            // await rabbitMq.sendToQueue(queueName, Buffer.from(JSON.stringify(data)));
         } catch (err: any) {
             console.error("addTxToQueue", (err as Error).message);
             await global_helper.save_error_logs('ETH_checkAddressInDB', err.message)

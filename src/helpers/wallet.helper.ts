@@ -1,7 +1,5 @@
 import { config } from "../config";
 import kafkaHelper from "../config/kafka.helper";
-// import rabbitMq from "../config/rabbitMq";
-// import redisClient from "../config/redis";
 import { CoinFamilyEnum } from "../enum";
 import { CoinInterface, CoinsModel } from "../models";
 import WalletModel from "../models/tables/model.wallets";
@@ -26,7 +24,6 @@ class WalletHelper {
             return balance !== null ? Number(await Utility_Helper.exponentialToDecimal(balance)) : null;
         } catch (err: any) {
             console.error(`error WalletHelper Fetch_Balance error >>>`, err);
-            // return 0;
             return null;
         }
     }
@@ -43,7 +40,6 @@ class WalletHelper {
                 wallet_address,
                 coin
             );
-            // console.log("inside it balance null update balance function ",balance)
             if (balance !== null) {
                 let wallet_data: any = await WalletModel.findOne({
                     attributes: ["balance"],
@@ -65,23 +61,17 @@ class WalletHelper {
                 }
             }
             else {
-
-                //let queue = config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
                 let data = {
                     coin_data: coin,
                     wallet_address: wallet_address,
                     queue_count: 0,
                 }
                 await kafkaHelper.produceMessage(this.bsc_pending_balance_update_topic, data)
-                // await rabbitMq.assertQueue(queue);
-                // await rabbitMq.sendToQueue(queue, Buffer.from(JSON.stringify(data)));
-
             }
             return balance;
         } catch (err: any) {
             console.error(`WalletHelper Update_Balance error >>>`, err);
             return null;
-            // return {};
         }
     }
 
@@ -137,15 +127,7 @@ class WalletHelper {
         } catch (err: any) {
             console.error(`WalletHelper Update_Balance error >>>`, err);
             return null;
-            // return {};
         }
     }
-
-
-
-
-    // update balance queue
-
-
 }
 export let Wallet_Helper = new WalletHelper();

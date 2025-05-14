@@ -1,21 +1,11 @@
 import { config } from "../config";
 import kafkaHelper from "../config/kafka.helper";
-// import rabbitMq from "../config/rabbitMq";
-// import redisClient from "../config/redis";
 import { Wallet_Helper } from "../helpers";
 import { WalletModel } from "../models";
 
 class UpdateBalanceController {
 
     public bsc_pending_balance_update_topic = config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
-    // public async update_wallet_balance() {
-    //     console.log('config.BACKEND_WALLET_ADDRESSES', config.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE);
-    //     await rabbitMq.consumeQueue(
-    //         config.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE || '',
-    //         this.updateBalance
-    //     )
-
-    // }
 
     public update_wallet_balance = async () => {
         let consumer = await kafkaHelper.kafka.consumer({ groupId: config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_GROUP_ID });
@@ -48,14 +38,6 @@ class UpdateBalanceController {
                             queue_count: data.queue_count + 1
                         })
                     }
-
-                    // await rabbitMq.assertQueue(config.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE);
-                    // await rabbitMq.sendToQueue(config.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE, Buffer.from(JSON.stringify(
-                    //     {
-                    //         coin_data: data.coin_data,
-                    //         wallet_address: data.wallet_address,
-                    //         queue_count: data.queue_count + 1
-                    //     })))
                 }
             }
 
