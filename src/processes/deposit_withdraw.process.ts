@@ -54,7 +54,7 @@ class BscDepositWithdrawProcess {
         coin_data = data.isNFTToken;
       } else {
         console.log("coin trnx")
-        coin_data = await bscProcessHelper.NativeCoinByCoinFamily(CoinFamilyEnum.BNB);
+        coin_data = await bscProcessHelper.checkIfContract('NativeCoin');
       }
       const webhookTx: WebHookTxType = {
         coin: coin_data,
@@ -173,9 +173,9 @@ class BscDepositWithdrawProcess {
       const newTrnx: any = await TrnxHistoryModel.create(trx_data);
 
       if (Addressdeposit) {
-        let trnxTypeD: string = "Deposit";
+        const trnxTypeD: string = "Deposit";
         /** update to adrs wallet balance */
-        let balance: any = await Wallet_Helper.Update_Balance(
+        const balance: any = await Wallet_Helper.Update_Balance(
           to_address, /// wallet_address,
           coin /// coin
         );
@@ -228,7 +228,7 @@ class BscDepositWithdrawProcess {
         );
         if (coin.is_token) {
           const native_coin: any =
-            await bscProcessHelper.NativeCoinByCoinFamily(coin.coin_family);
+            await bscProcessHelper.checkIfContract('NativeCoin');
           await Wallet_Helper.Update_Balance(
             from_address, /// wallet_address,
             native_coin /// coin
@@ -240,7 +240,7 @@ class BscDepositWithdrawProcess {
           amount
         )} ${coin.coin_symbol?.toUpperCase()} has been confirmed.`;
 
-        let notifData: NotificationInterface = {
+        const notifData: NotificationInterface = {
           title: trnxTypeW?.toUpperCase(),
           amount: amount,
           message: notiMsg,
