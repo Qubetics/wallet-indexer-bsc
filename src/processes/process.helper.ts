@@ -153,7 +153,7 @@ class BscProcessHelper {
       for await (let token of tokens) {
         let findTokenData = await this.getKeyValuePair(
           `${config.TOKEN_TYPE_BSC}`,
-          token.token_address.toUpperCase()
+          token.token_address == null ? 'NativeCoin'.toUpperCase() : token.token_address.toUpperCase(),
         );
         if (!findTokenData) {
           this.setKeyValuePair(
@@ -172,10 +172,10 @@ class BscProcessHelper {
 
   public checkIfContract = async (address: string) => {
     try {
-      let token_data: any = await this.getKeyValuePair(config.TOKEN_TYPE_BSC, address);
-      if (token_data) {
-        console.log("token_data>>>>>>>>", token_data)
-      }
+      const token_data: any = await this.getKeyValuePair(config.TOKEN_TYPE_BSC, address);
+      // if (token_data) {
+      //   console.log("token_data>>>>>>>>", token_data)
+      // }
       return JSON.parse(token_data);
     } catch (err: any) {
       console.error('check_our_wallet_address >>>>>', err);
