@@ -18,7 +18,7 @@ class BSCStartProcess {
     });
   }
   public read_behined_block_process() {
-    schedule.scheduleJob("*/5 * * * * *", async function () {
+    schedule.scheduleJob("*/3 * * * * *", async function () {
       await bsc_blocks_process.readBehindBlock()
     });
   }
