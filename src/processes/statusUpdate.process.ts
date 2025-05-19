@@ -104,7 +104,7 @@ class BscTxStatusUpdateProcess {
       if (!txData.coin?.is_token) {
         console.log('in case of coin');
         coin_data = await bscProcessHelper.checkIfContract('NativeCoin');
-      } else if (txData.coin?.token_type == TokenStandard.BEP20) {
+      } else if (txData.coin?.token_type?.toLowerCase() == TokenStandard.BEP20) {
         coin_data = await bscProcessHelper.checkIfContract(txData.coin.token_address);
       }
       console.log('coin_data >>', coin_data);
