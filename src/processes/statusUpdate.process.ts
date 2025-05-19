@@ -99,6 +99,7 @@ class BscTxStatusUpdateProcess {
     tx_fee: number
   }) => {
     try {
+      console.log('txData.coin >>', txData.coin);
       let coin_data: any = {};
       if (!txData.coin?.is_token) {
         console.log('in case of coin');
@@ -106,28 +107,33 @@ class BscTxStatusUpdateProcess {
       } else if (txData.coin?.token_type == TokenStandard.BEP20) {
         coin_data = await bscProcessHelper.checkIfContract(txData.coin.token_address);
       }
-      // let coin_data: any = await bscProcessHelper.CoinByCoinId(txData.coin_id);
-      // const coin_data: any = await CoinsModel.findOne({ attributes: ['is_token', 'token_type', 'coin_symbol', 'coin_family', 'cmc_id', 'coin_symbol', 'added_by'], where: { coin_id: txData.coin_id } });
-      const trx_data = {
-        coin_id: txData?.coin.coin_id,
-        status: txData?.status,
-        txid: txData?.txid,
-        gas_reverted: txData?.gasReverted,
-        tx_fee: txData?.tx_fee,
-        fromAddress: txData?.fromAddress,
-        coin: {
+      if (coin_data) {
+        // let coin_data: any = await bscProcessHelper.CoinByCoinId(txData.coin_id);
+        // const coin_data: any = await CoinsModel.findOne({ attributes: ['is_token', 'token_type', 'coin_symbol', 'coin_family', 'cmc_id', 'coin_symbol', 'added_by'], where: { coin_id: txData.coin_id } });
+        const trx_data = {
           coin_id: txData?.coin.coin_id,
-          is_token: coin_data.is_token,
-          token_type: coin_data.token_type,
-          coin_symbol: coin_data.coin_symbol,
-          coin_family: coin_data.coin_family,
-          cmc_id: coin_data.cmc_id,
-          token_address: Number(coin_data.is_token) === Number(BooleanEnum.true) ? coin_data.token_address : coin_data.coin_symbol,
-          added_by: coin_data.added_by
-        }
-      };
-      console.log(trx_data, "withdrwal");
-      await this.updateBroadcastTx(trx_data);
+          status: txData?.status,
+          txid: txData?.txid,
+          gas_reverted: txData?.gasReverted,
+          tx_fee: txData?.tx_fee,
+          fromAddress: txData?.fromAddress,
+          coin: {
+            coin_id: txData?.coin.coin_id,
+            is_token: coin_data.is_token,
+            token_type: coin_data.token_type,
+            coin_symbol: coin_data.coin_symbol,
+            coin_family: coin_data.coin_family,
+            cmc_id: coin_data.cmc_id,
+            token_address: Number(coin_data.is_token) === Number(BooleanEnum.true) ? coin_data.token_address : coin_data.coin_symbol,
+            added_by: coin_data.added_by
+          }
+        };
+        console.log(trx_data, "withdrwal");
+        await this.updateBroadcastTx(trx_data);
+      } else {
+        console.log('coin does not exists', coin_data);
+      }
+
 
 
     } catch (err: any) {
