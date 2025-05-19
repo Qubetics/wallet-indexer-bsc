@@ -107,6 +107,7 @@ class BscTxStatusUpdateProcess {
       } else if (txData.coin?.token_type == TokenStandard.BEP20) {
         coin_data = await bscProcessHelper.checkIfContract(txData.coin.token_address);
       }
+      console.log('coin_data >>', coin_data);
       if (coin_data) {
         // let coin_data: any = await bscProcessHelper.CoinByCoinId(txData.coin_id);
         // const coin_data: any = await CoinsModel.findOne({ attributes: ['is_token', 'token_type', 'coin_symbol', 'coin_family', 'cmc_id', 'coin_symbol', 'added_by'], where: { coin_id: txData.coin_id } });
