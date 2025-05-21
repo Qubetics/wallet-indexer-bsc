@@ -13,12 +13,12 @@ class BSCStartProcess {
     // this.testing_node()
   }
   public read_block_process() {
-    schedule.scheduleJob("*/2 * * * * *", async function () {
+    schedule.scheduleJob("* * * * * *", async function () {
       await bsc_blocks_process.getBlocks();
     });
   }
   public read_behined_block_process() {
-    schedule.scheduleJob("*/3 * * * * *", async function () {
+    schedule.scheduleJob("*/4 * * * * *", async function () {
       await bsc_blocks_process.readBehindBlock()
     });
   }
