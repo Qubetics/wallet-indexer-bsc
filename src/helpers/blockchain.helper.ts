@@ -5,18 +5,18 @@ import { ethers } from 'ethers';
 
 class BlockchainHelper {
     public provider: ethers.JsonRpcProvider;
-  
+
     constructor() {
-      this.provider = new ethers.JsonRpcProvider(config.config.NODE.BNB_RPC_URL || "");
-      this.initialize();
+        this.provider = new ethers.JsonRpcProvider(config.config.NODE.BNB_RPC_URL || "");
+        this.initialize();
     }
 
-    public initialize() {}
-  
+    public initialize() { }
+
     //BNB
     public async fetch_bnb_balance(address: string, coin: any) {
         try {
-            let balance: number | null = 0;
+            let balance: number | null = null;
             if (coin.is_token == BooleanEnum.true) {
                 switch (coin.token_type.toLowerCase()) {
                     case TokenStandard.BEP20:
@@ -32,7 +32,7 @@ class BlockchainHelper {
             } else {
                 balance = await this.bnb_coin_balance(address);
             }
-            return balance
+            return balance;
         } catch (err: any) {
             console.error(`Bsc_Helper BSC_Fetch_Balance error >>`, err);
             return null;
@@ -43,9 +43,9 @@ class BlockchainHelper {
         try {
             if (contract_address) {
                 const contract = new ethers.Contract(
-                  contract_address,
-                  config.config.CONTRACT_ABI,
-                  this.provider
+                    contract_address,
+                    config.config.CONTRACT_ABI,
+                    this.provider
                 );
                 const decimals = Number(await contract.decimals())
                 const balance = await contract.balanceOf(wallet_address);
@@ -54,8 +54,8 @@ class BlockchainHelper {
                 );
                 const tokBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
                 return Number(tokBalance);
-              }
-            return 0;
+            }
+            return null;
         } catch (err: any) {
             console.error(`BscHelper BEP20_Token_Fetch_Balance error >>`, err);
             throw err;
