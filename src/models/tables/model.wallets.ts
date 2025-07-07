@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { WalletInterface } from "../interfaces/index";
 import db from "../../config/db";
-import CoinsModel from "./model.coins";
+import coinsModel from "./model.coins";
 interface WalletCreationModel extends Optional<WalletInterface, "wallet_id"> { }
 interface WalletInstance
   extends Model<WalletInterface, WalletCreationModel>,
@@ -87,7 +87,7 @@ const WalletModel = db.db_write.define<WalletInstance>(
   dataObjIndex
 );
 
-WalletModel.belongsTo(CoinsModel, {
+WalletModel.belongsTo(coinsModel, {
   foreignKey: "coin_id",
   targetKey: "coin_id",
   as: "coin_data"

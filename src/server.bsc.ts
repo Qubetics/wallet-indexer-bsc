@@ -1,64 +1,83 @@
-import { bscWithdrawDepositProcess, bscPendingWithdrawalProcess, bscTxStatusUpdateProcess, bsc_blocks_process, bsc_tx_status_deposit_withdraw, bsc_pending_balance_update } from "./processes/index.process"
+import kafkaHelper from "./config/kafka.helper";
+import { bscWithdrawDepositProcess, bscPendingWithdrawalProcess, bscTxStatusUpdateProcess, bscBlocksProcess, processedBlockTransactions, updateBalanceProcess } from "./processes/index.process"
 import schedule from "node-schedule";
 class BSCStartProcess {
   constructor() {
-    this.read_block_process()
-    this.read_behined_block_process()
-    this.readSpecificBlock()
-    this.consume_read_block_queue()
-    this.bscWithdrawDepositProcess();
-    this.getPendingWithdrawalTxProcess();
-    this.updateTxStatusProcess();
-    this.BSCPendingBalanceUpdate();
-    // this.testing_node()
+    this.connectKafka();
+    this.readBlockProcess();
+    this.readBehindBlocks();
+    this.readSpecificBlock();
+    this.consumeBlockTxQueue();
+    this.consumeBehindBlockTxQueue();
+    this.consumeWithdrawDepositTxsQueue();
+    this.internalTxsInQueue();
+    this.consumeInternalTxQueue();
+    this.consumeUpdateBalanceQueue();
   }
-  public read_block_process() {
-    schedule.scheduleJob("* * * * * *", async function () {
-      await bsc_blocks_process.getBlocks();
+
+  public async connectKafka() {
+    await kafkaHelper.connect();
+  }
+
+  public readBlockProcess() {
+    schedule.scheduleJob("*/8 * * * * *", async function () {
+      await bscBlocksProcess.readCurrentBlocks();
     });
   }
-  public read_behined_block_process() {
-    schedule.scheduleJob("*/4 * * * * *", async function () {
-      await bsc_blocks_process.readBehindBlock()
+
+  public readBehindBlocks() {
+    schedule.scheduleJob("*/8 * * * * *", async function () {
+      await bscBlocksProcess.readBehindBlock();
     });
   }
+
   // public testing_node() {
   //   schedule.scheduleJob("*/2 * * * * *", async function () {
   //     await bsc_blocks_process.testingNode();
   //   });
   // }
+
   public readSpecificBlock() {
-    schedule.scheduleJob('*/1 * * * *', async function () {
-      await bsc_blocks_process.readSpecificBlock();
-    })
+    // 1 minute
+    schedule.scheduleJob("*/1 * * * *", async function () {
+      await bscBlocksProcess.readSpecificBlock();
+    });
   }
-  public consume_read_block_queue() {
+
+  public consumeBlockTxQueue() {
     setTimeout(async () => {
-      console.log('consume_read_block_queue >>>>>>');
-      await bsc_tx_status_deposit_withdraw.startBlockTxQueue();
-      await bsc_tx_status_deposit_withdraw.startBehindBlockTxQueue();
-      // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
-    }, 5000);
+      await processedBlockTransactions.startBlockTxQueue();
+    }, 10000);
   }
-  public async bscWithdrawDepositProcess() {
+
+  public consumeBehindBlockTxQueue() {
+    setTimeout(async () => {
+      await processedBlockTransactions.startBehindBlockTxQueue();
+    }, 10000);
+  }
+
+  public async consumeWithdrawDepositTxsQueue() {
     setTimeout(async () => {
       await bscWithdrawDepositProcess.startDepositQueue();
     }, 10000);
   }
-  public getPendingWithdrawalTxProcess() {
+
+  public internalTxsInQueue() {
+    // This runs every 10 seconds (*/10 * * * * *)
     schedule.scheduleJob("*/10 * * * * *", async function () {
       await bscPendingWithdrawalProcess.getTransactionFromDB();
     });
   }
-  public async updateTxStatusProcess() {
+
+  public async consumeInternalTxQueue() {
     setTimeout(async () => {
       await bscTxStatusUpdateProcess.startTxStatusUpdateQueue();
     }, 10000);
   }
 
-  public async BSCPendingBalanceUpdate() {
+  public async consumeUpdateBalanceQueue() {
     setTimeout(async () => {
-      await bsc_pending_balance_update.default.update_wallet_balance();
+      await updateBalanceProcess.updateWalletBalance();
     }, 10000);
   }
 }

@@ -1,9 +1,9 @@
 import { BooleanEnum, TokenStandard } from "../enum";
-import { Utility_Helper } from "./utility.helper";
+import { utilityHelper } from "./utility.helper";
 import { config } from '../config';
 import { ethers } from 'ethers';
 
-class BlockchainHelper {
+class BlockChainHelper {
     public provider: ethers.JsonRpcProvider;
   
     constructor() {
@@ -14,13 +14,13 @@ class BlockchainHelper {
     public initialize() {}
   
     //BNB
-    public async fetch_bnb_balance(address: string, coin: any) {
+    public async fetchBnbBalance(address: string, coin: any) {
         try {
             let balance: number | null = 0;
             if (coin.is_token == BooleanEnum.true) {
                 switch (coin.token_type.toLowerCase()) {
                     case TokenStandard.BEP20:
-                        balance = await this.bep20_token_balance(
+                        balance = await this.bep20TokenFetchBalance(
                             address,
                             coin.token_address ? coin.token_address : null
                         )
@@ -30,16 +30,16 @@ class BlockchainHelper {
                         break;
                 }
             } else {
-                balance = await this.bnb_coin_balance(address);
+                balance = await this.bnbCoinBalance(address);
             }
             return balance
         } catch (err: any) {
-            console.error(`Bsc_Helper BSC_Fetch_Balance error >>`, err);
+            console.error(`BscHelper BNB_Fetch_Balance error >>`, err);
             return null;
         }
     }
 
-    public async bep20_token_balance(wallet_address: string, contract_address: string | null) {
+    public async bep20TokenFetchBalance(wallet_address: string, contract_address: string | null) {
         try {
             if (contract_address) {
                 const contract = new ethers.Contract(
@@ -49,10 +49,10 @@ class BlockchainHelper {
                 );
                 const decimals = Number(await contract.decimals())
                 const balance = await contract.balanceOf(wallet_address);
-                const tokenBalance = await Utility_Helper.bigNumberSafeMath(
+                const tokenBalance = await utilityHelper.bigNumberSafeMath(
                     balance, '/', Math.pow(10, decimals)
                 );
-                const tokBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
+                const tokBalance: string = await utilityHelper.exponentialToDecimal(tokenBalance)
                 return Number(tokBalance);
               }
             return 0;
@@ -62,29 +62,29 @@ class BlockchainHelper {
         }
     }
 
-    public async bnb_coin_balance(address: string) {
+    public async bnbCoinBalance(address: string) {
         try {
             const balance = await this.provider.getBalance(address);
-            const tokenBalance = await Utility_Helper.bigNumberSafeMath(
+            const tokenBalance = await utilityHelper.bigNumberSafeMath(
                 balance, '/', Math.pow(10, 18)
             );
-            const coinBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
+            const coinBalance: string = await utilityHelper.exponentialToDecimal(tokenBalance)
             return Number(coinBalance || 0);
         } catch (err: any) {
-            console.error(`Bsc_Helper Coin_Fetch_Balance error >>`, err);
+            console.error(`BscHelper BNB_Coin_Fetch_Balance error >>`, err);
             throw err;
         }
     }
 
-    public async convertWeiToBsc(value: number | string) {
+    public async convertWeiToBnb(value: number | string) {
         try {
             const valueAsString = value.toString();
             return ethers.formatEther(valueAsString);;
         } catch (err: any) {
-            console.error(`ConvertWeiToBsc error >>`, err);
+            console.error(`ConvertWeiToBnb error >>`, err);
             return 0;
         }
     }
 
 }
-export let Blockchain_Helper = new BlockchainHelper();
+export let blockChainHelper = new BlockChainHelper();

@@ -1,15 +1,15 @@
-import { Blockchain_Helper } from "../helpers/index";
+import { blockChainHelper } from "../helpers/index";
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
 import { KEYS } from "../enum";
-import { blocks_trnx } from "../interfaces/global_helper";
-import { BscOldBLockModel } from "../models";
-import { global_helper } from "../helpers/global_helper";
+import { blocksTrnx } from "../interfaces/globalHelper";
+import { bscOldBLockModel } from "../models";
+import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers } from "ethers";
 
 
-class Bsc_block_process {
+class BSCBlockProcess {
     public minBlockConfirmation: number;
     public swap: string | null;
     public approval: string | null;
@@ -23,10 +23,16 @@ class Bsc_block_process {
         this.approval = ethers.id('Approval(address,address,uint256)');
     }
 
-    public async getBlocks() {
+    public async readCurrentBlocks() {
         try {
-            let old_block: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC)
-            let new_block: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.NEW_BLOCK_BSC)
+            const results = await bscProcessHelper.getMultipleKeyValuePairs(config.REDISKEYS.BSC_BLOCKS, [config.REDISKEYS.OLD_BLOCK_BSC, config.REDISKEYS.NEW_BLOCK_BSC]);
+
+            // Validate results array
+            if (!Array.isArray(results) || results.length < 2) {
+                console.error("Invalid results from Redis operation:", results);
+                return;
+            }
+            const [old_block, new_block] = results;
             if (!old_block) {
                 console.log("No block present in old block")
                 await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, this.minBlockConfirmation, null)
@@ -36,12 +42,13 @@ class Bsc_block_process {
                 await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.NEW_BLOCK_BSC, this.minBlockConfirmation, null)
             }
             if (old_block && new_block) {
-                let oldBlock: number = Number(old_block);
-                let newBlock = Number(new_block);
+                const oldBlock: number = Number(old_block);
+                const newBlock = Number(new_block);
                 if (newBlock <= oldBlock) {
                     await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.NEW_BLOCK_BSC, this.minBlockConfirmation, newBlock)
+                    return;
                 } else {
-                    let block_diff: number = newBlock - oldBlock;
+                    const block_diff: number = newBlock - oldBlock;
                     if (block_diff > 50) {
                         await bscProcessHelper.diff_blocks_add_in_db(newBlock, oldBlock)
                         await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, newBlock.toString())
@@ -51,18 +58,17 @@ class Bsc_block_process {
                     }
                 }
             } else {
-                console.log(" no old block and no new block")
-                await global_helper.save_error_logs('Bsc_setBlocks', 'No old block no new block')
+                console.log("No old block and no new block")
+                await globalHelper.saveErrorLogs('Bsc_getBlocks', 'No old block no new block')
             }
         } catch (err: any) {
             console.error("Error in getBlocks", err)
-            await global_helper.save_error_logs('bsc_getBlocks', err.message)
+            await globalHelper.saveErrorLogs('bsc_getBlocks', err.message)
         }
     }
     public async readBlocks(blockNumber: number, toBlockNumber: number) {
         try {
-            console.log("blockNumber", blockNumber)
-            let block_updated: number = blockNumber + 1;
+            const block_updated: number = blockNumber + 1;
             await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, block_updated.toString());
             console.table({
                 LATEST_BLOCK: blockNumber,
@@ -72,25 +78,34 @@ class Bsc_block_process {
             await this.getTxFromBlock(blockNumber, KEYS.latestBlock);
         } catch (err: any) {
             console.error("Error in readBlocks>>.", (err as Error).message)
-            await global_helper.save_error_logs('BSC_readBlocks', err.message)
+            await globalHelper.saveErrorLogs('BSC_readBlocks', err.message)
         }
     }
     public async getTxFromBlock(blockId: number, key: string) {
         try {
-            const blockInfo = await Blockchain_Helper.provider.getBlock(blockId, true);
+            // console.error("In getTxFromBlock>>999999999999999999999.", key, blockId)
+            const blockInfo = await blockChainHelper.provider.getBlock(blockId, true);
+            // console.log("this is blockInfo>>>>", blockInfo)
             if (!blockInfo) {
                 console.log("No block info");
-                await BscOldBLockModel.create({ block_number: blockId, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: blockId, end_block: blockId, status: 0 })
+                await bscOldBLockModel.create({
+                    block_number: blockId,
+                    coin_family: config.STATIC_COIN_FAMILY.BNB,
+                    start_block: blockId,
+                    end_block: blockId,
+                    status: 0
+                });
                 return;
             }
             const transactions = blockInfo.prefetchedTransactions || [];
+            // console.log("this is transactions>>>>", transactions)
             if (transactions.length === 0) {
                 console.log("No block info transactions");
                 return;
             }
 
             const transactionPromises = transactions.map(async (tx) => {
-                const data: blocks_trnx = {
+                const data: blocksTrnx = {
                     block_number: blockId,
                     tx_id: tx.hash || '',
                     value: tx.value.toString(),
@@ -105,30 +120,35 @@ class Bsc_block_process {
                 const targetTopic = (key === KEYS.latestBlock) ? this.bsc_block_tx_topic : this.bsc_behind_block_tx_topic;
 
                 try {
+                    // console.log("this is data & targetTopic if behind producing  **********>>>>", data, targetTopic)
+                    // console.log("this is data & targetTopic>>>>", data, targetTopic)
                     await kafkaHelper.produceMessage(targetTopic, data);
                 } catch (err) {
                     console.error("Error while producing message for transaction", tx.hash, err);
                 }
             });
+
+            // Wait for all the transaction processing to complete
             await Promise.allSettled(transactionPromises);
         } catch (err: any) {
             console.error("Error in getTxFromBlock:", (err as Error).message);
-            await global_helper.save_error_logs('MATIC_readBehindBlock', err.message)
+            await globalHelper.saveErrorLogs('BSC_readBehindBlock', err.message)
         }
     }
     public async readBehindBlock() {
         try {
             // REDIS BASED
-            let data_exist: any = await bscProcessHelper.getKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC)
+            const data_exist: any = await bscProcessHelper.getKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC)
             if (data_exist) {
-                let data_exists = JSON.parse(data_exist);
+                const data_exists = JSON.parse(data_exist);
                 if (data_exists) {
+                    console.log("This block exist in redis read behined")
                     let { id, start_block, end_block } = data_exists;
                     if (end_block > start_block) {
                         console.log("This block go for getTxFromBlock")
-                        await bsc_blocks_process.getTxFromBlock(start_block, KEYS.behinedBlock);
+                        await this.getTxFromBlock(start_block, KEYS.behinedBlock);
                         start_block = start_block + 1;
-                        let add_data = {
+                        const add_data = {
                             id: id,
                             start_block: start_block,
                             end_block: end_block,
@@ -137,10 +157,9 @@ class Bsc_block_process {
                         await bscProcessHelper.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(add_data))
                     } else {
                         console.log("id>>>>>>>>>>>", id)
-                        await BscOldBLockModel.update({ status: 1 }, { where: { id: id } })
+                        await bscOldBLockModel.update({ status: 1 }, { where: { id: id } })
                         await bscProcessHelper.deleteKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC)
                         await bscProcessHelper.behindBlocks()
-
                     }
                 }
             } else {
@@ -149,14 +168,15 @@ class Bsc_block_process {
             }
         } catch (err: any) {
             console.error("Error in readBehindBlock>>", err)
-            await global_helper.save_error_logs('BSC_readBehindBlock', err.message)
+            await globalHelper.saveErrorLogs('BSC_readBehindBlock', err.message)
         }
     }
     public async readSpecificBlock() {
         try {
             console.log("Entere into readSpecificBlock>>>")
-            let specificBlocks: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC)
-            let specific_block: any = JSON.parse(specificBlocks);
+            const specificBlocks: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC)
+            const specific_block: any = JSON.parse(specificBlocks);
+            console.log("specific_block>>>>", specific_block)
             if (specific_block && Number(specific_block) > 0) {
                 console.table({ SPECIFIC_BLOCK: specific_block })
                 await this.getTxFromBlock(specific_block, KEYS.readSpecificBlock)
@@ -169,41 +189,41 @@ class Bsc_block_process {
             console.error("Error in readSpecificBlock>>>", error)
         }
     }
-    public async testingNode() {
-        try {
-            const provider = Blockchain_Helper.provider;
+    // public async testingNode() {
+    //     try {
+    //         const provider = blockChainHelper.provider;
 
-            // Get Block Number
-            const latestBlock = await provider.getBlockNumber();
-            console.log("Block number>>", latestBlock);
+    //         // Get Block Number
+    //         const latestBlock = await provider.getBlockNumber();
+    //         console.log("Block number>>", latestBlock);
 
-            const blockInfo = await provider.getBlock(latestBlock, true);
-            console.log("blockInfo>>", blockInfo);
+    //         const blockInfo = await provider.getBlock(latestBlock, true);
+    //         console.log("blockInfo>>", blockInfo);
 
-            if (blockInfo && blockInfo.transactions.length > 0) {
-                let firstTxHash: string;
-                const firstTx = blockInfo.transactions[0];
+    //         if (blockInfo && blockInfo.transactions.length > 0) {
+    //             let firstTxHash: string;
+    //             const firstTx = blockInfo.transactions[0];
 
-                if (typeof firstTx === 'string') {
-                    firstTxHash = firstTx;
-                } else {
-                    // Assert the type to access the hash property safely
-                    firstTxHash = (firstTx as ethers.TransactionResponse).hash;
-                }
-                // Get Block Receipt
-                const txReceipt = await provider.getTransactionReceipt(firstTxHash);
-                console.log("txreceipt>>", txReceipt);
+    //             if (typeof firstTx === 'string') {
+    //                 firstTxHash = firstTx;
+    //             } else {
+    //                 // Assert the type to access the hash property safely
+    //                 firstTxHash = (firstTx as ethers.TransactionResponse).hash;
+    //             }
+    //             // Get Block Receipt
+    //             const txReceipt = await provider.getTransactionReceipt(firstTxHash);
+    //             console.log("txreceipt>>", txReceipt);
 
-                // Get more details (not reduced in ethers.js)
-                const transaction = await provider.getTransaction(firstTxHash);
-                console.log("transaction>>", transaction);
-            } else {
-                console.log("No transactions found in the block");
-            }
-        } catch (err: any) {
-            console.error("Error in testingNode>>", err)
-        }
-    }
+    //             // Get more details (not reduced in ethers.js)
+    //             const transaction = await provider.getTransaction(firstTxHash);
+    //             console.log("transaction>>", transaction);
+    //         } else {
+    //             console.log("No transactions found in the block");
+    //         }
+    //     } catch (err: any) {
+    //         console.error("Error in testingNode>>", err)
+    //     }
+    // }
 }
 
-export const bsc_blocks_process = new Bsc_block_process();
+export const bscBlocksProcess = new BSCBlockProcess();

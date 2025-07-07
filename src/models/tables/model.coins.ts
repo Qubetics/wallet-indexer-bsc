@@ -51,10 +51,10 @@ let dataObj = {
         type: DataTypes.INTEGER,
         allowNull: true,
     },
-    token_abi: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
+    // token_abi: {
+    //     type: DataTypes.STRING,
+    //     allowNull: true,
+    // },
     token_address: {
         type: DataTypes.STRING,
         allowNull: true,

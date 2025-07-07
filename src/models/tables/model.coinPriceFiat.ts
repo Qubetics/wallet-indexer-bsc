@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from "sequelize";
-import { CoinPriceInFiatInterface } from "../interfaces/interface.coin_price_fiat";
+import { CoinPriceInFiatInterface } from "../interfaces/interface.coinPriceFiat";
 import db from "../../config/db";
 
 interface CoinPriceInFiatCreationModel
