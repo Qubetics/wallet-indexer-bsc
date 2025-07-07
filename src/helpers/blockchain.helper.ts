@@ -70,7 +70,7 @@ class BlockchainHelper {
                 balance, '/', Math.pow(10, 18)
             );
             const coinBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
-            return Number(coinBalance || 0);
+            return Number(coinBalance);
         } catch (err: any) {
             console.error(`Bsc_Helper Coin_Fetch_Balance error >>`, err);
             return null;
