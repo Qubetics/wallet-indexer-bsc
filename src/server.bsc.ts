@@ -13,6 +13,7 @@ class BSCStartProcess {
     this.internalTxsInQueue();
     this.consumeInternalTxQueue();
     this.consumeUpdateBalanceQueue();
+    
   }
 
   public async connectKafka() {
