@@ -16,7 +16,6 @@ import {
     // settingsModel,
     walletModel
 } from "../models/index";
-import { utilityHelper } from "./utility.helper";
 
 class DbHelper {
 
@@ -97,7 +96,7 @@ class DbHelper {
     }
 
     /** get user device token using user id */
-    GetDeviceTokens = async (user_id: number, address: string, coin_family: number) => {
+    getDeviceTokens = async ( address: string, coin_family: number) => {
         try {
             return await deviceTokenModel.findAll({
                 attributes: ["device_token"],
@@ -228,4 +227,4 @@ class DbHelper {
     // }
 
 }
-export let Db_Helper = new DbHelper();
+export let dbHelper = new DbHelper();

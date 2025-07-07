@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js";
-import { Db_Helper } from ".";
+  import { dbHelper } from "./db.helper";
 import {  notificationModel } from "../models";
 import firebaseAdmin from 'firebase-admin';
 import { Op } from "sequelize";
@@ -97,7 +97,7 @@ class UtilityHelper {
   public async SendNotification(data: any) {
     try {
       let toUserId: number = data.to_user_id ? data.to_user_id : 0;
-      let deviceTokens: any = await Db_Helper.GetDeviceTokens(toUserId, data.wallet_address, data.coin_family);
+      let deviceTokens: any = await dbHelper.getDeviceTokens(data.wallet_address, data.coin_family);
       let finalDeviceTokens: any = [];
 
       for await (let deviceToken of deviceTokens) {
