@@ -146,14 +146,14 @@ class BscDepositWithdrawProcess {
       if (tx_type !== TrnxTypeEnum.WITHDRAW && checkOldTrnx && checkOldTrnx.tx_id == tx_hash) {
         tx_type = checkOldTrnx.type;
       }
-      let AddressWithdraw: any = await bscProcessHelper.check_our_wallet_address(from_address);
-      let Addressdeposit: any = await bscProcessHelper.check_our_wallet_address(to_address);
+      const AddressWithdraw: any = await bscProcessHelper.check_our_wallet_address(from_address);
+      const Addressdeposit: any = await bscProcessHelper.check_our_wallet_address(to_address);
 
 
-      let user_id: number = AddressWithdraw ? AddressWithdraw.user_id : 0;
-      let to_user_id: number = Addressdeposit ? Addressdeposit.user_id : 0;
+      const user_id: number = AddressWithdraw ? AddressWithdraw.user_id : 0;
+      const to_user_id: number = Addressdeposit ? Addressdeposit.user_id : 0;
 
-      let trx_data: any = {
+      const trx_data: any = {
         user_id: user_id,
         to_user_id: to_user_id,
         req_type: TxReqTypesEnum.EXNG,
@@ -184,7 +184,7 @@ class BscDepositWithdrawProcess {
           amount
         )} ${coin?.coin_symbol?.toUpperCase()} has been confirmed.`;
 
-        let notifData: NotificationInterface = {
+        const notifData: NotificationInterface = {
           title: NotificationTypeEnum.DEPOSIT?.toUpperCase(),
           message: notiMsg,
           amount: amount,
@@ -216,7 +216,7 @@ class BscDepositWithdrawProcess {
             trnxTypeW = "Swap";
             break;
           case TrnxTypeEnum.CROSS_CHAIN:
-            trnxTypeW = "Cross chain Swap";
+            trnxTypeW = "Cross Chain Swap";
             break;
           default:
             break;

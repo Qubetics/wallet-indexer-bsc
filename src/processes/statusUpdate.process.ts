@@ -187,7 +187,7 @@ class BscTxStatusUpdateProcess {
                 trnxTypeW = "Swap";
                 break;
               case TrnxTypeEnum.CROSS_CHAIN:
-                trnxTypeW = "Cross-chain Swap";
+                trnxTypeW = "Cross Chain Swap";
                 break;
               default:
                 break;
@@ -196,7 +196,7 @@ class BscTxStatusUpdateProcess {
               amount
             )} ${coin_symbol.toUpperCase()} has been confirmed.`;
 
-            let notifData: NotificationInterface = {
+            const notifData: NotificationInterface = {
               title: trnxTypeW.toUpperCase(),
               message: notiMsg,
               amount: amount,
@@ -215,8 +215,8 @@ class BscTxStatusUpdateProcess {
           }
           const Addressdeposit: any = await bscProcessHelper.check_our_wallet_address(to_address);
           if (Addressdeposit) {
-            let to_user_id: number = Addressdeposit ? Addressdeposit.user_id : 0;
-            let trnxTypeD: string = "Deposit";
+            const to_user_id: number = Addressdeposit ? Addressdeposit.user_id : 0;
+            const trnxTypeD: string = "Deposit";
             /** update to adrs wallet balance */
             if (to_address !== from_address) {
               if (tx_type !== TrnxTypeEnum.DAPP) {
@@ -265,12 +265,12 @@ class BscTxStatusUpdateProcess {
               trnxTypeW = "Swap";
               break;
             case TrnxTypeEnum.CROSS_CHAIN:
-              trnxTypeW = "Cross-chain Swap";
+              trnxTypeW = "Cross Chain Swap";
               break;
             default:
               break;
           }
-          const notiMsg = trx_data?.coin.token_type === "ERC721" ? `Withdraw of NFT(${trx_data?.coin.coin_symbol.toUpperCase()}) with token id ${amount} has been confirmed.` : `${trnxTypeW} request of ${await Utility_Helper.bigNumberSafeConversion(amount)} ${trx_data?.coin.coin_symbol.toUpperCase()} has been failed.`;
+          const notiMsg = trx_data?.coin.token_type === "ERC721" ? `Withdraw of NFT(${trx_data?.coin.coin_symbol.toUpperCase()}) with token id ${amount} has been confirmed.` : `${trnxTypeW} of ${await Utility_Helper.bigNumberSafeConversion(amount)} ${trx_data?.coin.coin_symbol.toUpperCase()} has been failed.`;
           const notifData: NotificationInterface = {
             title: trnxTypeW.toUpperCase(),
             message: notiMsg,
