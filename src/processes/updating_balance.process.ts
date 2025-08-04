@@ -9,7 +9,7 @@ class UpdateBalanceController {
   public bsc_pending_balance_update_topic =
     config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
 
-  public update_wallet_balance = async () => {
+  public updateBalanceConsumer = async () => {
     const consumer = await kafkaHelper.kafka.consumer({
       groupId: config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_GROUP_ID,
     });
@@ -85,12 +85,12 @@ class UpdateBalanceController {
     }
   };
 
-  public updateWalletBalanceByWallet = async () => {
+  public updateWalletBalance = async () => {
     try {
       let coin_limit_count = 0;
 
       const GLOBALBALANCEUPDATECOUNT = `WalletCount_${CoinFamilyEnum.BNB}`;
-      const limit = 50;
+      const limit = 2;
 
       const findCoinCounter = await bscProcessHelper.getKeyValuePair(
         config.config.REDISKEYS.ALL_PROCESSES,

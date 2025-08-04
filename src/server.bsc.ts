@@ -16,8 +16,8 @@ class BSCStartProcess {
     this.bscWithdrawDepositProcess();
     this.getPendingWithdrawalTxProcess();
     this.updateTxStatusProcess();
-    this.BSCPendingBalanceUpdate();
-    this.BSCUpdateBalanceByWallet();
+    this.updateBalanceConsumer();
+    this.updateBalanceByWallet();
     // this.testing_node()
   }
   public read_block_process() {
@@ -64,15 +64,15 @@ class BSCStartProcess {
     }, 10000);
   }
 
-  public async BSCPendingBalanceUpdate() {
+  public async updateBalanceConsumer() {
     setTimeout(async () => {
-      await bsc_pending_balance_update.default.update_wallet_balance();
+      await bsc_pending_balance_update.default.updateBalanceConsumer();
     }, 10000);
   }
 
-  public async BSCUpdateBalanceByWallet() {
+  public async updateBalanceByWallet() {
     schedule.scheduleJob("*/2 * * * *", async function () {
-      await bsc_pending_balance_update.default.updateWalletBalanceByWallet();
+      await bsc_pending_balance_update.default.updateWalletBalance();
     });
   }
 }
