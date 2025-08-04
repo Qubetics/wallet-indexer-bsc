@@ -116,14 +116,11 @@ class WalletHelper {
                 return false;
             }
             /* fatch wallet balnce */
-            let balance: number | null = await this.Fetch_Balance(
+            const balance: number | null = await this.Fetch_Balance(
                 wallet_address,
                 coin
             );
-            if (balance !== null) {
-                return balance;
-            }
-            return null;
+            return balance;
         } catch (err: any) {
             console.error(`WalletHelper Update_Balance error >>>`, err);
             return null;

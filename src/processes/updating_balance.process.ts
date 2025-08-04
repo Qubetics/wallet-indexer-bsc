@@ -10,7 +10,7 @@ class UpdateBalanceController {
     config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
 
   public update_wallet_balance = async () => {
-    let consumer = await kafkaHelper.kafka.consumer({
+    const consumer = await kafkaHelper.kafka.consumer({
       groupId: config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_GROUP_ID,
     });
     await consumer.subscribe({
@@ -28,11 +28,11 @@ class UpdateBalanceController {
           partition: any;
           message: any;
         }) => {
-          console.log("🚀 ~ startTxStatusUpdateQueue topic >>>>", topic);
-          console.log(
-            "🚀 ~ startTxStatusUpdateQueue message.value >>>>",
-            message.value.toString()
-          );
+          // console.log("🚀 ~ startTxStatusUpdateQueue topic >>>>", topic);
+          // console.log(
+          //   "🚀 ~ startTxStatusUpdateQueue message.value >>>>",
+          //   message.value.toString()
+          // );
           await this.updateBalance(JSON.parse(message.value.toString()));
         },
       })
@@ -43,15 +43,17 @@ class UpdateBalanceController {
 
   public updateBalance = async (data: any) => {
     try {
-      if (data.queue_count < 10) {
-        let balance: any = await Wallet_Helper.Update_Balance_Queue(
-          data.wallet_address,
-          data.coin_data
-        );
-        if (balance !== null) {
-          if (typeof data?.balance == "number" && data?.balance == balance) {
-            return;
-          }
+      if (data.queue_count > 5) {
+        console.log(`Balance update attempts exceeded (5) for address: ${data.wallet_address}`);
+        return;
+      }
+      const balance: any = await Wallet_Helper.Update_Balance_Queue(
+        data.wallet_address,
+        data.coin_data
+      );
+      if (balance !== null) {
+        const currentBalance = data.balance !== undefined ? Number(data.balance) : undefined;
+        if (currentBalance === undefined || currentBalance !== balance) {
           await WalletModel.update(
             { balance: Number(balance) },
             {
@@ -61,19 +63,23 @@ class UpdateBalanceController {
               },
             }
           );
+          console.log(`Balance updated for ${data.wallet_address}: ${balance}`);
         } else {
-          if (data.queue_count <= 5) {
-            await kafkaHelper.produceMessage(
-              this.bsc_pending_balance_update_topic,
-              {
-                coin_data: data.coin_data,
-                wallet_address: data.wallet_address,
-                queue_count: data.queue_count + 1,
-              }
-            );
-          }
+          console.log(`Balance unchanged for ${data.wallet_address}: ${balance}`);
+        }
+      } else {
+        if (data.queue_count <= 5) {
+          await kafkaHelper.produceMessage(
+            this.bsc_pending_balance_update_topic,
+            {
+              coin_data: data.coin_data,
+              wallet_address: data.wallet_address,
+              queue_count: data.queue_count + 1,
+            }
+          );
         }
       }
+
     } catch (err: any) {
       console.error("Error in updateBalance", err);
     }
@@ -103,12 +109,13 @@ class UpdateBalanceController {
         coin_limit_count
       );
       const wallets: any = await WalletModel.findAll({
-        attributes: ["wallet_address", "coin_id", "coin_family", "balance"],
+        attributes: ["wallet_address", "balance"],
         where: {
           coin_family: CoinFamilyEnum.BNB,
         },
         include: [
           {
+            attributes: ["coin_id", "coin_name", "coin_symbol", "coin_family", "is_token", "token_type", "token_address"],
             model: CoinsModel,
             as: "coin_data",
           },
