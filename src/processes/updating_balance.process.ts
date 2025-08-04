@@ -90,7 +90,7 @@ class UpdateBalanceController {
       let coin_limit_count = 0;
 
       const GLOBALBALANCEUPDATECOUNT = `WalletCount_${CoinFamilyEnum.BNB}`;
-      const limit = 2;
+      const limit = 50;
 
       const findCoinCounter = await bscProcessHelper.getKeyValuePair(
         config.config.REDISKEYS.ALL_PROCESSES,
