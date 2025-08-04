@@ -69,13 +69,18 @@ class UpdateBalanceController {
         }
       } else {
         if (data.queue_count <= 5) {
+
+          const queueData: any = {
+            coin_data: data.coin_data,
+            wallet_address: data.wallet_address,
+            queue_count: data.queue_count + 1,
+          }
+          if (data.balance !== undefined) {
+            queueData.balance = data.balance;
+          }
           await kafkaHelper.produceMessage(
             this.bsc_pending_balance_update_topic,
-            {
-              coin_data: data.coin_data,
-              wallet_address: data.wallet_address,
-              queue_count: data.queue_count + 1,
-            }
+            queueData
           );
         }
       }
