@@ -75,8 +75,10 @@ class Bsc_block_process {
             await global_helper.save_error_logs('BSC_readBlocks', err.message)
         }
     }
+
     public async getTxFromBlock(blockId: number, key: string) {
         try {
+            console.log('blockId >>>>', blockId, 'key >>>>', key);
             const blockInfo = await Blockchain_Helper.provider.getBlock(blockId, true);
             if (!blockInfo) {
                 console.log("No block info");
@@ -119,22 +121,24 @@ class Bsc_block_process {
     public async readBehindBlock() {
         try {
             // REDIS BASED
-            let data_exist: any = await bscProcessHelper.getKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC)
+            const data_exist: any = await bscProcessHelper.getKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC)
             if (data_exist) {
-                let data_exists = JSON.parse(data_exist);
+                const data_exists = JSON.parse(data_exist);
                 if (data_exists) {
-                    let { id, start_block, end_block } = data_exists;
+                    const { id, start_block, end_block } = data_exists;
                     if (end_block > start_block) {
-                        console.log("This block go for getTxFromBlock")
-                        await bsc_blocks_process.getTxFromBlock(start_block, KEYS.behinedBlock);
-                        start_block = start_block + 1;
-                        let add_data = {
+                        const newStartBlock = start_block + 1;
+                        const updateKeyData = {
                             id: id,
-                            start_block: start_block,
+                            start_block: newStartBlock,
                             end_block: end_block,
-                            diff: end_block - start_block
+                            diff: end_block - newStartBlock
                         }
-                        await bscProcessHelper.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(add_data))
+                        await bscProcessHelper.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(updateKeyData))
+
+                        console.log("This block go for getTxFromBlock")
+                        bsc_blocks_process.getTxFromBlock(start_block, KEYS.behinedBlock);
+
                     } else {
                         console.log("id>>>>>>>>>>>", id)
                         await BscOldBLockModel.update({ status: 1 }, { where: { id: id } })
