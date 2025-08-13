@@ -47,7 +47,7 @@ class Bsc_block_process {
                         await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, newBlock.toString())
                         await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.NEW_BLOCK_BSC, this.minBlockConfirmation, newBlock)
                     } else {
-                        this.readBlocks(oldBlock, newBlock)
+                        await this.readBlocks(oldBlock, newBlock)
                     }
                 }
             } else {
