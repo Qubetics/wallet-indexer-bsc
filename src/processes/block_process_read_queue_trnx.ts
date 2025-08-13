@@ -61,7 +61,7 @@ class queue_transactions {
                 return false;
             }
             if (txReceipt !== null && txReceipt.status == 0) {
-                console.log("(txReceipt.status === false && txReceipt !== null")
+                // console.log("(txReceipt.status === false && txReceipt !== null")
             } else if (txReceipt) {
                 bsc_tx_status_deposit_withdraw.buildTx(txReceipt, data)
             }
