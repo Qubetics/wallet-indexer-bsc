@@ -47,7 +47,7 @@ class Bsc_block_process {
                         await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, newBlock.toString())
                         await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.NEW_BLOCK_BSC, this.minBlockConfirmation, newBlock)
                     } else {
-                        await this.readBlocks(oldBlock, newBlock)
+                        this.readBlocks(oldBlock, newBlock)
                     }
                 }
             } else {
@@ -69,7 +69,7 @@ class Bsc_block_process {
                 BLOCK_DIFFERENCE: toBlockNumber - blockNumber,
                 TO_BLOCK_NUMBER: toBlockNumber
             });
-            await this.getTxFromBlock(blockNumber, KEYS.latestBlock);
+            this.getTxFromBlock(blockNumber, KEYS.latestBlock);
         } catch (err: any) {
             console.error("Error in readBlocks>>.", (err as Error).message)
             await global_helper.save_error_logs('BSC_readBlocks', err.message)

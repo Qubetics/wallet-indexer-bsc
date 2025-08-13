@@ -63,7 +63,7 @@ class queue_transactions {
             if (txReceipt !== null && txReceipt.status == 0) {
                 console.log("(txReceipt.status === false && txReceipt !== null")
             } else if (txReceipt) {
-                await bsc_tx_status_deposit_withdraw.buildTx(txReceipt, data)
+                bsc_tx_status_deposit_withdraw.buildTx(txReceipt, data)
             }
         } catch (error: any) {
             console.error("Error in read_trnx>>>", error)
