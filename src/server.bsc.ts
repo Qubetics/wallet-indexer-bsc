@@ -36,7 +36,7 @@ class BSCStartProcess {
   private readBlockProcess() {
     setInterval(async () => {
       await readBlockProcess.getBlocks();
-    }, 600);
+    }, 700);
   }
 
   private readBehinedBlockProcess() {
