@@ -8,7 +8,7 @@ import { global_helper } from "../helpers/global_helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt } from "ethers";
 
-class queue_transactions {
+class ReadTransactionsProcess {
     public approval: string | null;
     public swap: string | null;
     public transfer: string | null;
@@ -26,33 +26,33 @@ class queue_transactions {
 
     }
 
-    public startBlockTxQueue = async () => {
-        let consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_block_tx_grpup_id });
+    public startBlockTxConsumer = async () => {
+        const consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_block_tx_grpup_id });
         await consumer.subscribe({ topic: this.bsc_block_tx_topic, fromBeginning: true });
 
         await consumer.run({
             eachMessage: ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
-                this.read_trnx(JSON.parse(message.value.toString()))
+                this.readTrnx(JSON.parse(message.value.toString()))
             }
         }).catch((err: Error) => {
-            console.log("🔥 ~ startBlockTxQueue consumer error", err);
+            console.log("🔥 ~ startBlockTxConsumer consumer error", err);
         });
     };
 
-    public startBehindBlockTxQueue = async () => {
-        let consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_behind_block_tx_group_id });
+    public startBehindBlockTxConsumer = async () => {
+        const consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_behind_block_tx_group_id });
         await consumer.subscribe({ topic: this.bsc_behind_block_tx_topic, fromBeginning: true });
 
         await consumer.run({
             eachMessage: ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
-                this.read_trnx(JSON.parse(message.value.toString()))
+                this.readTrnx(JSON.parse(message.value.toString()))
             }
         }).catch((err: Error) => {
-            console.log("🔥 ~ startBehindBlockTxQueue consumer error", err);
+            console.log("🔥 ~ startBehindBlockTxConsumer consumer error", err);
         });
     };
 
-    public read_trnx = async (data: blocks_trnx) => {
+    private readTrnx = async (data: blocks_trnx) => {
         try {
             const txReceipt: TransactionReceipt | null = await Blockchain_Helper.provider.getTransactionReceipt(data.tx_id);
             if (txReceipt == null && Number(data.retry_count) < 6) {
@@ -63,7 +63,7 @@ class queue_transactions {
             if (txReceipt !== null && txReceipt.status == 0) {
                 // console.log("(txReceipt.status === false && txReceipt !== null")
             } else if (txReceipt) {
-                bsc_tx_status_deposit_withdraw.buildTx(txReceipt, data)
+                await this.buildTx(txReceipt, data)
             }
         } catch (error: any) {
             console.error("Error in read_trnx>>>", error)
@@ -74,7 +74,7 @@ class queue_transactions {
             }
         }
     }
-    public buildTx = async (txReceipt: TransactionReceipt, data: blocks_trnx) => {
+    private buildTx = async (txReceipt: TransactionReceipt, data: blocks_trnx) => {
         try {
             if (txReceipt.status !== 0 && txReceipt.logs.length > 0) {
                 for await (const log of txReceipt.logs) {
@@ -108,24 +108,24 @@ class queue_transactions {
                                 };
                                 await this.checkAddressInDB(txData);
                             } else if (isToken == null) {
-                                await bsc_tx_status_deposit_withdraw.check_bsc_deposit(data, txReceipt)
+                                await this.check_bsc_deposit(data, txReceipt)
                             }
                         }
                     }
                     /** swap transaction then also check bsc */
                     if (log?.topics && log?.topics[0] == this.swap) {
-                        await bsc_tx_status_deposit_withdraw.check_bsc_deposit(data, txReceipt);
+                        await this.check_bsc_deposit(data, txReceipt);
                     }
                 }
             } else {
-                await bsc_tx_status_deposit_withdraw.check_bsc_deposit(data, txReceipt);
+                await this.check_bsc_deposit(data, txReceipt);
             }
         } catch (error: any) {
             console.error("buildTx error >>>", (error as Error).message);
             await global_helper.save_error_logs('Bsc_buildTx', error.message)
         }
     };
-    public check_bsc_deposit = async (data: blocks_trnx, txReceipt: TransactionReceipt) => {
+    private check_bsc_deposit = async (data: blocks_trnx, txReceipt: TransactionReceipt) => {
         try {
             /** for check the bsc deposit */
             if (
@@ -161,7 +161,8 @@ class queue_transactions {
 
         }
     }
-    public checkAddressInDB = async (txData: TxType) => {
+
+    private checkAddressInDB = async (txData: TxType) => {
         try {
             let ourTrnx: any = null;
             let withdraw = await bscProcessHelper.check_our_wallet_address(txData.fromAddress);
@@ -177,7 +178,7 @@ class queue_transactions {
                 ourTrnx = txData;
             }
             if (ourTrnx) {
-                await bsc_tx_status_deposit_withdraw.addTxToQueue(
+                await this.addTxToQueue(
                     ourTrnx,
                     this.bsc_deposit_withdraw_topic || ""
                 );
@@ -186,7 +187,8 @@ class queue_transactions {
             console.error("Error in checkAddressInDB>>", err)
         }
     }
-    public addTxToQueue = async (data: TxType, queueName: string) => {
+
+    private addTxToQueue = async (data: TxType, queueName: string) => {
         try {
             await kafkaHelper.produceMessage(queueName, data);
         } catch (err: any) {
@@ -197,4 +199,4 @@ class queue_transactions {
     };
 
 }
-export const bsc_tx_status_deposit_withdraw = new queue_transactions()
+export const readTransactionsProcess = new ReadTransactionsProcess()

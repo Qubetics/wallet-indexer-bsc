@@ -68,7 +68,7 @@ class BscProcessHelper {
           await this.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.NODE_ALERT_BSC, setvalue.toString())
           if (Number(value_exist) == 0 || Number(value_exist) == 5 || Number(value_exist) == 10 || Number(value_exist) == 20 || Number(value_exist) == 50 || Number(value_exist) == 75 || Number(value_exist) == 100) {
             let email_body = `<p>Bscereum Node Issue ${Number(value_exist)}</p><p>Current block running = ${current_block}.</p><p>Old Block = ${old_block}.</p>`;
-            await global_helper.send_mail(config.NODE_ISSUE_ALERT_EMAIL, email_body, `Bsc Node Issue ${Number(value_exist)}`);
+            // await global_helper.send_mail(config.NODE_ISSUE_ALERT_EMAIL, email_body, `Bsc Node Issue ${Number(value_exist)}`);
           } else {
             console.log("no email")
           }
@@ -277,20 +277,20 @@ class BscProcessHelper {
 
   public behindBlocks = async () => {
     try {
-      let behindBlocks: any = await BscOldBLockModel.findOne({
+      const behindBlocks: any = await BscOldBLockModel.findOne({
         attributes: ['id', 'block_number', 'start_block', 'end_block'],
         where: { status: 0 },
         raw: true,
         order: [['id', 'ASC']]
       })
       if (behindBlocks) {
-        let add_data = {
+        const addData = {
           id: behindBlocks.id,
           start_block: behindBlocks.start_block,
           end_block: behindBlocks.end_block,
           diff: behindBlocks.end_block - behindBlocks.start_block
         }
-        let dataaaaa_exist: any = await this.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(add_data))
+        await this.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(addData))
       } else {
         console.log("you have not any behind block yet")
       }

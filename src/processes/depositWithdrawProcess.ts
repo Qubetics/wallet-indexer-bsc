@@ -10,11 +10,11 @@ import WalletModel from "../models/tables/model.wallets";
 import kafkaHelper from "../config/kafka.helper";
 
 
-class BscDepositWithdrawProcess {
+class DepositWithdrawProcess {
   public bsc_deposit_withdraw_group_id = config.KAFKA_TRANSACTIONS.DEPOSIT_WITHDRAW_GROUP_ID;
   public bsc_deposit_withdraw_topic = config.KAFKA_TRANSACTIONS.DEPOSIT_WITHDRAW_TOPIC;
 
-  public startDepositQueue = async () => {
+  public startDepositWithdrawConsumer = async () => {
     let consumer = await kafkaHelper.kafka.consumer({
       groupId: this.bsc_deposit_withdraw_group_id,
     });
@@ -32,8 +32,8 @@ class BscDepositWithdrawProcess {
         partition: any;
         message: any;
       }) => {
-        console.log('🚀 ~ startDepositWithdrawQueue topic', topic);
-        console.log('🚀 ~ startDepositWithdrawQueue message.value', message.value.toString());
+        console.log('🚀 ~ startDepositWithdrawConsumer topic', topic);
+        console.log('🚀 ~ startDepositWithdrawConsumer message.value', message.value.toString());
         await this.checkIfOurTx(JSON.parse(message.value.toString()));
       },
     }).catch((err: Error) => {
@@ -41,7 +41,7 @@ class BscDepositWithdrawProcess {
     });
   };
 
-  public checkIfOurTx = async (data: TxType) => {
+  private checkIfOurTx = async (data: TxType) => {
     if (data.amount == 0) {
       console.log("amount === 0")
     } else {
@@ -75,7 +75,7 @@ class BscDepositWithdrawProcess {
 
   };
 
-  public SaveNewTrnx = async (
+  private SaveNewTrnx = async (
     trnx_data: WebHookTxType
   ) => {
     try {
@@ -267,4 +267,4 @@ class BscDepositWithdrawProcess {
   };
 
 }
-export const bscWithdrawDepositProcess = new BscDepositWithdrawProcess();
+export const depositWithdrawProcess = new DepositWithdrawProcess();

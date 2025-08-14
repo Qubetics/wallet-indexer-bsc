@@ -19,6 +19,8 @@ export const config = {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
     OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
     NEW_BLOCK_BSC: zookeeperConfig.config.NEW_BLOCK_BSC,
+    START_BLOCK: 'start_block',
+    END_BLOCK: 'end_block',
     ALL_PROCESSES: zookeeperConfig.config.ALL_PROCESSES,
     BSC_ERROR_LOGS: zookeeperConfig.config.BSC_ERROR_LOGS,
     NODE_ALERT_BSC: zookeeperConfig.config.NODE_ALERT_BSC,
@@ -31,6 +33,10 @@ export const config = {
    * KAFKA KEYS START
    */
   KAFKA_BLOCKS: {
+    BSC_BLOCK_TOPIC: 'bsc_block_topic',
+    BSC_BLOCK_GROUP_ID: 'bsc_block_group',
+    BSC_BEHIND_BLOCK_TOPIC: 'bsc_behind_block_topic',
+    BSC_BEHIND_BLOCK_GROUP_ID: 'bsc_behind_block_group',
     BSC_BLOCK_TX_TOPIC: zookeeperConfig.config.BSC_BLOCK_TX_TOPIC,
     BSC_BEHIND_BLOCK_TX_TOPIC: zookeeperConfig.config.BSC_BEHIND_BLOCK_TX_TOPIC,
     BSC_BLOCK_TX_GROUP_ID: zookeeperConfig.config.BSC_BLOCK_TX_GROUP_ID,

@@ -8,12 +8,12 @@ import { global_helper } from "../helpers/global_helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt, TransactionResponse } from "ethers";
 import { pending_trnx } from "../interfaces/global_helper";
-class BscTxStatusUpdateProcess {
+class UpdateInternalTrnxStatusProcess {
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
   public bsc_pending_withdrawal_tx_group_id = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_GROUP_ID;
 
-  public startTxStatusUpdateQueue = async () => {
-    let consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_pending_withdrawal_tx_group_id });
+  public startTxStatusUpdateConsumer = async () => {
+    const consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_pending_withdrawal_tx_group_id });
     await consumer.subscribe({ topic: this.bsc_pending_withdrawal_tx_topic, fromBeginning: true });
     await consumer.run({
       eachMessage: async ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
@@ -26,7 +26,7 @@ class BscTxStatusUpdateProcess {
     });
   };
 
-  public getTx = async (data: pending_trnx) => {
+  private getTx = async (data: pending_trnx) => {
     try {
       // Initialize provider
       const provider = Blockchain_Helper.provider;
@@ -85,7 +85,7 @@ class BscTxStatusUpdateProcess {
     }
   };
 
-  public sendTxUpdate = async (txData: {
+  private sendTxUpdate = async (txData: {
     coin: {
       coin_id: number,
       is_token: boolean,
@@ -143,7 +143,7 @@ class BscTxStatusUpdateProcess {
     }
   };
 
-  public updateBroadcastTx = async (trx_data: any) => {
+  private updateBroadcastTx = async (trx_data: any) => {
     const txnData: any = await TrnxHistoryModel.findOne({ attributes: ['from_adrs', 'amount', 'user_id', 'id', 'to_adrs', 'type', 'coin_family', 'fiat_type'], where: { tx_id: trx_data.txid, status: 'completed', [Op.or]: [{ blockchain_status: { [Op.is]: null as any } }, { blockchain_status: 'pending' }] }, raw: true });
     if (txnData) {
       const from_address = txnData.from_adrs;
@@ -300,5 +300,5 @@ class BscTxStatusUpdateProcess {
     }
   }
 }
-export const bscTxStatusUpdateProcess = new BscTxStatusUpdateProcess();
+export const updateInternalTrnxStatusProcess = new UpdateInternalTrnxStatusProcess();
 

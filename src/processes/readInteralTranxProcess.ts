@@ -5,7 +5,7 @@ import { CoinsModel, TrnxHistoryModel } from "../models";
 import kafkaHelper from "../config/kafka.helper";
 import { pending_trnx } from "../interfaces/global_helper";
 
-class BSCPendingWithdrawalProcess {
+class ReadInternalTxProcess {
 
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
 
@@ -43,9 +43,9 @@ class BSCPendingWithdrawalProcess {
     // }
   };
 
-  public addTxToQueue = async (data: { tx_id: string; coin_id: number }) => {
+  private addTxToQueue = async (data: { tx_id: string; coin_id: number }) => {
     await kafkaHelper.produceMessage(this.bsc_pending_withdrawal_tx_topic, data);
   };
 }
 
-export const bscPendingWithdrawalProcess = new BSCPendingWithdrawalProcess();
+export const readInternalTxProcess = new ReadInternalTxProcess();

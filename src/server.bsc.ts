@@ -1,35 +1,65 @@
+import kafkaHelper from "./config/kafka.helper";
 import {
-  bscWithdrawDepositProcess,
-  bscPendingWithdrawalProcess,
-  bscTxStatusUpdateProcess,
-  bsc_blocks_process,
-  bsc_tx_status_deposit_withdraw,
-  bsc_pending_balance_update,
+  depositWithdrawProcess,
+  readInternalTxProcess,
+  updateInternalTrnxStatusProcess,
+  readBlockTrnxProcess,
+  readTransactionsProcess,
+  updateBalanceProcess,
+  readBlockProcess
 } from "./processes/index.process";
 import schedule from "node-schedule";
 class BSCStartProcess {
   constructor() {
-    this.read_block_process();
-    this.read_behined_block_process();
+    // this.read_block_process();
+    this.connectKafka();
+    this.readBlockProcess();
+    this.readBehinedBlockProcess();
     this.readSpecificBlock();
-    this.consume_read_block_queue();
-    this.bscWithdrawDepositProcess();
-    this.getPendingWithdrawalTxProcess();
-    this.updateTxStatusProcess();
-    this.updateBalanceConsumer();
+    this.startBlocksConsumers();
+    this.startBlockTrxConsumers();
+    this.startDepositWithdrawConsumer();
+    this.internalWithdrawalTxProcess();
+    this.startInternalTxStatusUpdateConsumer();
+    this.startUpdateBalanceConsumer();
     this.updateBalanceByWallet();
     // this.testing_node()
   }
-  public read_block_process() {
+  private async connectKafka() {
+    await kafkaHelper.connect();
+  }
+  // public read_block_process() {
+  //   schedule.scheduleJob("* * * * * *", async function () {
+  //     await bsc_blocks_process.getBlocks();
+  //   });
+  // }
+  private readBlockProcess() {
     schedule.scheduleJob("* * * * * *", async function () {
-      await bsc_blocks_process.getBlocks();
+      readBlockProcess.getBlocks();
     });
   }
-  public read_behined_block_process() {
+
+  private readBehinedBlockProcess() {
     schedule.scheduleJob("*/2 * * * * *", async function () {
-      await bsc_blocks_process.readBehindBlock();
+      readBlockProcess.readBehindBlock();
     });
   }
+
+  private startBlocksConsumers() {
+    setTimeout(async () => {
+      // console.log("consume_read_block_queue >>>>>>");
+      readBlockTrnxProcess.startLatestBlockEvenConsumer();
+      readBlockTrnxProcess.startLatestBlockOddConsumer();
+      readBlockTrnxProcess.startBehindBlockConsumer();
+      // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
+    }, 1000);
+  }
+
+  // public read_behined_block_process() {
+  //   schedule.scheduleJob("*/2 * * * * *", async function () {
+  //     await bsc_blocks_process.readBehindBlock();
+  //   });
+  // }
   // public testing_node() {
   //   schedule.scheduleJob("*/2 * * * * *", async function () {
   //     await bsc_blocks_process.testingNode();
@@ -37,42 +67,42 @@ class BSCStartProcess {
   // }
   public readSpecificBlock() {
     schedule.scheduleJob("*/1 * * * *", async function () {
-      await bsc_blocks_process.readSpecificBlock();
+      await readBlockTrnxProcess.readSpecificBlock();
     });
   }
-  public consume_read_block_queue() {
+  public startBlockTrxConsumers() {
     setTimeout(async () => {
-      console.log("consume_read_block_queue >>>>>>");
-      await bsc_tx_status_deposit_withdraw.startBlockTxQueue();
-      await bsc_tx_status_deposit_withdraw.startBehindBlockTxQueue();
+      // console.log("consume_read_block_queue >>>>>>");
+      await readTransactionsProcess.startBlockTxConsumer();
+      await readTransactionsProcess.startBehindBlockTxConsumer();
       // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
-    }, 5000);
+    }, 1000);
   }
-  public async bscWithdrawDepositProcess() {
+  public async startDepositWithdrawConsumer() {
     setTimeout(async () => {
-      await bscWithdrawDepositProcess.startDepositQueue();
-    }, 10000);
+      await depositWithdrawProcess.startDepositWithdrawConsumer();
+    }, 1000);
   }
-  public getPendingWithdrawalTxProcess() {
+  public internalWithdrawalTxProcess() {
     schedule.scheduleJob("*/10 * * * * *", async function () {
-      await bscPendingWithdrawalProcess.getTransactionFromDB();
+      await readInternalTxProcess.getTransactionFromDB();
     });
   }
-  public async updateTxStatusProcess() {
+  public async startInternalTxStatusUpdateConsumer() {
     setTimeout(async () => {
-      await bscTxStatusUpdateProcess.startTxStatusUpdateQueue();
-    }, 10000);
+      await updateInternalTrnxStatusProcess.startTxStatusUpdateConsumer();
+    }, 1000);
   }
 
-  public async updateBalanceConsumer() {
+  public async startUpdateBalanceConsumer() {
     setTimeout(async () => {
-      await bsc_pending_balance_update.default.updateBalanceConsumer();
-    }, 10000);
+      await updateBalanceProcess.updateBalanceConsumer();
+    }, 1000);
   }
 
   public async updateBalanceByWallet() {
     schedule.scheduleJob("*/2 * * * *", async function () {
-      await bsc_pending_balance_update.default.updateWalletBalance();
+      await updateBalanceProcess.updateWalletBalance();
     });
   }
 }

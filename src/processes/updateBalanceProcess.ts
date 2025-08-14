@@ -5,7 +5,7 @@ import { Wallet_Helper } from "../helpers";
 import { CoinsModel, WalletModel } from "../models";
 import bscProcessHelper from "./process.helper";
 
-class UpdateBalanceController {
+class UpdateBalanceProcess {
   public bsc_pending_balance_update_topic =
     config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
 
@@ -172,5 +172,6 @@ class UpdateBalanceController {
     }
   };
 }
+export const updateBalanceProcess = new UpdateBalanceProcess();
 
-export default new UpdateBalanceController();
+// export default new UpdateBalanceController();
