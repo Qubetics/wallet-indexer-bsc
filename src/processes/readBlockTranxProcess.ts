@@ -48,6 +48,7 @@ class ReadBlockTrnxProcess {
             }) => {
                 console.log('🚀 ~ startLatestBlockEvenConsumer topic', topic);
                 console.log('🚀 ~ startLatestBlockEvenConsumer message.value', message.value.toString());
+                await new Promise(resolve => setTimeout(resolve, 300));
                 const blockId = JSON.parse(message.value.toString());
                 this.getTxFromBlock(blockId, KEYS.latestBlock);
             },
@@ -76,6 +77,7 @@ class ReadBlockTrnxProcess {
             }) => {
                 console.log('🚀 ~ startLatestBlockOddConsumer topic', topic);
                 console.log('🚀 ~ startLatestBlockOddConsumer message.value', message.value.toString());
+                await new Promise(resolve => setTimeout(resolve, 350));
                 const blockId = JSON.parse(message.value.toString());
                 this.getTxFromBlock(blockId, KEYS.latestBlock);
             },
