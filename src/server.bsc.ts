@@ -40,7 +40,7 @@ class BSCStartProcess {
   }
 
   private readBehinedBlockProcess() {
-    schedule.scheduleJob("*/1 * * * * *", async function () {
+    schedule.scheduleJob("*/2 * * * * *", async function () {
       readBlockProcess.readBehindBlock();
     });
   }
