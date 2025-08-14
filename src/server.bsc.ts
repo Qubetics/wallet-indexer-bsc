@@ -34,9 +34,9 @@ class BSCStartProcess {
   //   });
   // }
   private readBlockProcess() {
-    schedule.scheduleJob("* * * * * *", async function () {
-      readBlockProcess.getBlocks();
-    });
+    setInterval(async () => {
+      await readBlockProcess.getBlocks();
+    }, 600);
   }
 
   private readBehinedBlockProcess() {
