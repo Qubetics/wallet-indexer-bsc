@@ -5,8 +5,8 @@ import { WalletModel, CustomTokennModel, CoinsModel } from "../models/tables/ind
 import bscProcessHelper from "../processes/process.helper";
 import redisClient from "../config/redis";
 
-class Global_helper {
-    public async check_coin_in_wallet(wallet_address: string, coin: CoinInterface, balance: any) {
+class GlobalHelper {
+    public async checkCoinInWallet(wallet_address: string, coin: CoinInterface, balance: any) {
         try {
             let wallet_data: any = await WalletModel.findOne({
                 attributes: ["balance", "user_id", "wallet_name"],
@@ -25,7 +25,7 @@ class Global_helper {
                     coin_id: coin.coin_id,
                     coin_family: coin.coin_family,
                     balance: balance !== null ? balance : 0,
-                    default_wallet: 1,
+                    // default_wallet: 1,
                     status: 1
                 }
                 await WalletModel.create(data_obj);
@@ -62,7 +62,7 @@ class Global_helper {
                 console.log("coin.added_by does not exist")
             }
         } catch (err: any) {
-            console.error("Error in check_coin_in_wallet>>>", err)
+            console.error("Error in checkCoinInWallet>>>", err)
             return err;
         }
 
@@ -201,4 +201,4 @@ class Global_helper {
         }
     }
 }
-export let global_helper = new Global_helper();
+export let globalHelper = new GlobalHelper();

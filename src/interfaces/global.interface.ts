@@ -20,7 +20,7 @@ export interface blocksTrnx {
     gasPrice: number | null
 }
 
-export interface pending_trnx {
+export interface pendingTrnx {
     tx_id: string;
     coin_id: number,
     is_token: boolean,

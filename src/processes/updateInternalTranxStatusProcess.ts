@@ -1,35 +1,111 @@
 import { config } from "../config/config";
-import { BlockChainStatusEnum, BooleanEnum, CoinFamilyEnum, NotificationTypeEnum, TokenStandard, TrnxTypeEnum } from "../enum";
-import { CoinsModel, NotificationInterface, TrnxHistoryModel } from "../models";
-import { Utility_Helper, Wallet_Helper, Blockchain_Helper, Db_Helper } from "../helpers";
+import { BlockChainStatusEnum, BooleanEnum, NotificationTypeEnum, TokenStandard, TrnxTypeEnum } from "../enum";
+import { NotificationInterface, TrnxHistoryModel } from "../models";
+import { utilityHelper, walletHelper, blockchainHelper } from "../helpers";
 import bscProcessHelper from "./process.helper";
 import { Op } from "sequelize";
-import { global_helper } from "../helpers/global_helper";
+import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt, TransactionResponse } from "ethers";
-import { pending_trnx } from "../interfaces/global_helper";
+import { pendingTrnx } from "../interfaces/global.interface";
 class UpdateInternalTrnxStatusProcess {
+
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
   public bsc_pending_withdrawal_tx_group_id = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_GROUP_ID;
 
   public startTxStatusUpdateConsumer = async () => {
-    const consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_pending_withdrawal_tx_group_id });
-    await consumer.subscribe({ topic: this.bsc_pending_withdrawal_tx_topic, fromBeginning: true });
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
-        console.log("🚀 ~ startTxStatusUpdateQueue topic >>>>", topic);
-        console.log("🚀 ~ startTxStatusUpdateQueue message.value >>>>", message.value.toString());
-        await this.getTx(JSON.parse(message.value.toString()))
-      }
-    }).catch((err: Error) => {
-      console.log("🔥 ~ ~ startTxStatusUpdateQueue error", err);
-    });
-  };
+    let consumer: any = null;
+    let isConnected = false;
 
-  private getTx = async (data: pending_trnx) => {
+    const connectConsumer = async () => {
+      try {
+
+        if (consumer) {
+          await consumer.disconnect();
+        }
+
+        consumer = await kafkaHelper.kafka.consumer({
+          groupId: this.bsc_pending_withdrawal_tx_group_id,
+          // Add session timeout for better error handling
+          sessionTimeout: 30000,
+          // Add heartbeat interval
+          heartbeatInterval: 3000,
+        });
+
+        await consumer.subscribe({
+          topic: this.bsc_pending_withdrawal_tx_topic,
+          fromBeginning: true, // ✅ Changed to false to prevent reprocessing
+        });
+
+        await consumer.run({
+          // ✅ Add proper autoCommit configuration
+          autoCommit: true,
+          autoCommitInterval: 5000,
+          autoCommitThreshold: 100,
+
+          eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
+            try {
+              console.log("🚀 ~ startTxStatusUpdateQueue topic >>>>", topic);
+              console.log("🚀 ~ startTxStatusUpdateQueue message.value >>>>", message.value.toString());
+              await this.getTx(JSON.parse(message.value.toString()))
+
+            } catch (error) {
+              console.error(`❌ Error processing message:`, error);
+            }
+          },
+        });
+        isConnected = true;
+      } catch (error) {
+        console.error(`❌ Failed to connect consumer:`, error);
+        isConnected = false;
+        throw error;
+      }
+    };
+
+    // ✅ Add reconnection logic
+    const startWithReconnection = async () => {
+      while (true) {
+        try {
+          if (!isConnected) {
+            console.log(`🔄 Attempting to connect consumer startTxStatusUpdateConsumer...`);
+            await connectConsumer();
+          }
+
+          // Keep the consumer alive
+          await new Promise(resolve => setTimeout(resolve, 30000));
+
+        } catch (error) {
+          console.error(`❌ Consumer connection error:`, error);
+          isConnected = false;
+
+          // Wait before retrying
+          console.log(`⏳ Waiting 10 seconds before reconnecting...`);
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        }
+      }
+    };
+
+    // Start the consumer with reconnection
+    await startWithReconnection();
+  };
+  // public startTxStatusUpdateConsumer = async () => {
+  //   const consumer = await kafkaHelper.kafka.consumer({ groupId: this.bsc_pending_withdrawal_tx_group_id });
+  //   await consumer.subscribe({ topic: this.bsc_pending_withdrawal_tx_topic, fromBeginning: true });
+  //   await consumer.run({
+  //     eachMessage: async ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
+  //       console.log("🚀 ~ startTxStatusUpdateQueue topic >>>>", topic);
+  //       console.log("🚀 ~ startTxStatusUpdateQueue message.value >>>>", message.value.toString());
+  //       await this.getTx(JSON.parse(message.value.toString()))
+  //     }
+  //   }).catch((err: Error) => {
+  //     console.log("🔥 ~ ~ startTxStatusUpdateQueue error", err);
+  //   });
+  // };
+
+  private getTx = async (data: pendingTrnx) => {
     try {
       // Initialize provider
-      const provider = Blockchain_Helper.provider;
+      const provider = blockchainHelper.provider;
 
       const transaction: TransactionResponse | null = await provider.getTransaction(data.tx_id);
       if (transaction && transaction?.blockNumber) {
@@ -39,12 +115,12 @@ class UpdateInternalTrnxStatusProcess {
         const gasUsed = transactionReceipt?.gasUsed || BigInt(0);
         const gasPrice = transaction.gasPrice || BigInt(0);
         const gasTotal = transaction.gasLimit || BigInt(0);
-        const txFee = await Utility_Helper.bigNumberSafeMath(gasUsed, '*', gasPrice);
+        const txFee = await utilityHelper.bigNumberSafeMath(gasUsed, '*', gasPrice);
         const gasInBsc: number = Number(ethers.formatEther(txFee));
 
         if (gasTotal > BigInt(0) && gasUsed > BigInt(0)) {
-          const gasDiff = await Utility_Helper.bigNumberSafeMath(gasTotal, '-', gasUsed);
-          const reverted = await Utility_Helper.bigNumberSafeMath(gasPrice, '*', gasDiff);
+          const gasDiff = await utilityHelper.bigNumberSafeMath(gasTotal, '-', gasUsed);
+          const reverted = await utilityHelper.bigNumberSafeMath(gasPrice, '*', gasDiff);
           gasReverted = Number(ethers.formatEther(reverted));
         }
 
@@ -146,115 +222,122 @@ class UpdateInternalTrnxStatusProcess {
   private updateBroadcastTx = async (trx_data: any) => {
     const txnData: any = await TrnxHistoryModel.findOne({ attributes: ['from_adrs', 'amount', 'user_id', 'id', 'to_adrs', 'type', 'coin_family', 'fiat_type'], where: { tx_id: trx_data.txid, status: 'completed', [Op.or]: [{ blockchain_status: { [Op.is]: null as any } }, { blockchain_status: 'pending' }] }, raw: true });
     if (txnData) {
-      const from_address = txnData.from_adrs;
+      const fromAddress = txnData.from_adrs;
       const amount = txnData.amount;
-      const user_id = txnData.user_id;
-      const tx_row_id = txnData.id;
-      const status_tx = trx_data.status == "success" ? BlockChainStatusEnum.CONFIRMED : BlockChainStatusEnum.FAILED;
-      const to_address = txnData.to_adrs;
-      const tx_type = txnData?.type
-      const coin_symbol = trx_data?.coin?.coin_symbol
-      const coin_family = txnData.coin_family;
+      const userId = txnData.user_id;
+      const txRowId = txnData.id;
+      const statusTx = trx_data.status == "success" ? BlockChainStatusEnum.CONFIRMED : BlockChainStatusEnum.FAILED;
+      const toAddress = txnData.to_adrs;
+      const txType = txnData?.type
+      const coinSymbol = trx_data?.coin?.coin_symbol
+      const coinFamily = txnData.coin_family;
       //Update transaction status
-      const txUpdateRes = await TrnxHistoryModel.update({ blockchain_status: status_tx, tx_fee: trx_data.tx_fee, gas_reverted: trx_data.gas_reverted }, { where: { id: tx_row_id } })
+      const txUpdateRes = await TrnxHistoryModel.update({ blockchain_status: statusTx, tx_fee: trx_data.tx_fee, gas_reverted: trx_data.gas_reverted }, { where: { id: txRowId } })
       if (txUpdateRes) {
-        if (status_tx == BlockChainStatusEnum.CONFIRMED) {
-          console.log('tx_type >>', tx_type)
-          const AddressWithdraw: any = await bscProcessHelper.check_our_wallet_address(from_address);
-          if (AddressWithdraw) {
-            /** update withdraw user bsc balance */
-            if (tx_type !== TrnxTypeEnum.DAPP) {
-              const native_coin: any = await bscProcessHelper.checkIfContract('NativeCoin');
-              await Wallet_Helper.Update_Balance(from_address, native_coin);
-              console.log("trx_data.coin?.token_type>>>>", trx_data)
-              if (trx_data?.coin?.is_token === BooleanEnum.true && trx_data.coin?.token_type.toLowerCase() === TokenStandard.BEP20.toLowerCase()) {
-                /** Update User ERC20 Token Balance */
-                await Wallet_Helper.Update_Balance(from_address, trx_data?.coin);
+        if (statusTx == BlockChainStatusEnum.CONFIRMED) {
+          console.log('tx_type >>', txType)
+          const addresses = [fromAddress, toAddress].filter(Boolean);
+          const results = await bscProcessHelper.getMultipleKeyValuePairs(`${config.BSC_WALLET_ADDRESS}`, addresses);
+          if (results) {
+            const [addressWithdraw, addressDeposit]: any = results as string[];
+
+            // const AddressWithdraw: any = await bscProcessHelper.check_our_wallet_address(from_address);
+            if (addressWithdraw) {
+              /** update withdraw user bsc balance */
+              if (txType !== TrnxTypeEnum.DAPP) {
+                const native_coin: any = await bscProcessHelper.checkIfContract('NativeCoin');
+                await walletHelper.updateBalance(fromAddress, native_coin);
+                console.log("trx_data.coin?.token_type>>>>", trx_data)
+                if (trx_data?.coin?.is_token === BooleanEnum.true && trx_data.coin?.token_type.toLowerCase() === TokenStandard.BEP20.toLowerCase()) {
+                  /** Update User ERC20 Token Balance */
+                  await walletHelper.updateBalance(fromAddress, trx_data?.coin);
+                }
+              } else { // Entered in DAPP transactioin
+                await walletHelper.updateAllActiveCoinBalance(fromAddress, coinFamily);
               }
-            } else { // Entered in DAPP transactioin
-              await Wallet_Helper.Update_all_active_coin_balance(from_address, coin_family);
-            }
 
-            let trnxTypeW: string = "Withdraw";
-            switch (tx_type) {
-              case TrnxTypeEnum.DAPP:
-                trnxTypeW = "Smart Contract Execution";
-                break;
-              case TrnxTypeEnum.APPROVE:
-                trnxTypeW = "Approval";
-                break;
-              case TrnxTypeEnum.SWAP:
-                trnxTypeW = "Swap";
-                break;
-              case TrnxTypeEnum.CROSS_CHAIN:
-                trnxTypeW = "Cross Chain Swap";
-                break;
-              default:
-                break;
-            }
-            const notiMsg = `${trnxTypeW} of ${await Utility_Helper.bigNumberSafeConversion(
-              amount
-            )} ${coin_symbol.toUpperCase()} has been confirmed.`;
-
-            const notifData: NotificationInterface = {
-              title: trnxTypeW.toUpperCase(),
-              message: notiMsg,
-              amount: amount,
-              from_user_id: 0,
-              to_user_id: user_id,
-              coin_symbol: coin_symbol,
-              wallet_address: from_address,
-              tx_id: tx_row_id,
-              coin_id: trx_data?.coin?.coin_id,
-              coin_family: trx_data?.coin?.coin_family,
-              tx_type: tx_type,
-              notification_type: trnxTypeW,
-              state: "confirmed"
-            };
-            Utility_Helper.SendNotification(notifData);
-          }
-          const Addressdeposit: any = await bscProcessHelper.check_our_wallet_address(to_address);
-          if (Addressdeposit) {
-            const to_user_id: number = Addressdeposit ? Addressdeposit.user_id : 0;
-            const trnxTypeD: string = "Deposit";
-            /** update to adrs wallet balance */
-            if (to_address !== from_address) {
-              if (tx_type !== TrnxTypeEnum.DAPP) {
-                let balance: any = await Wallet_Helper.Update_Balance(
-                  to_address, /// wallet_address,
-                  trx_data?.coin /// coin
-                );
-                await global_helper.check_coin_in_wallet(to_address, trx_data?.coin, balance)
-              } else {
-                await Wallet_Helper.Update_all_active_coin_balance(to_address, coin_family);
+              let trnxTypeW: string = "Withdraw";
+              switch (txType) {
+                case TrnxTypeEnum.DAPP:
+                  trnxTypeW = "Smart Contract Execution";
+                  break;
+                case TrnxTypeEnum.APPROVE:
+                  trnxTypeW = "Approval";
+                  break;
+                case TrnxTypeEnum.SWAP:
+                  trnxTypeW = "Swap";
+                  break;
+                case TrnxTypeEnum.CROSS_CHAIN:
+                  trnxTypeW = "Cross Chain Swap";
+                  break;
+                default:
+                  break;
               }
+              const notiMsg = `${trnxTypeW} of ${await utilityHelper.bigNumberSafeConversion(
+                amount
+              )} ${coinSymbol.toUpperCase()} has been confirmed.`;
+
+              const notifData: NotificationInterface = {
+                title: trnxTypeW.toUpperCase(),
+                message: notiMsg,
+                amount: amount,
+                from_user_id: 0,
+                to_user_id: userId,
+                coin_symbol: coinSymbol,
+                wallet_address: fromAddress,
+                tx_id: txRowId,
+                coin_id: trx_data?.coin?.coin_id,
+                coin_family: trx_data?.coin?.coin_family,
+                tx_type: txType,
+                notification_type: trnxTypeW,
+                state: "confirmed"
+              };
+              utilityHelper.SendNotification(notifData);
             }
-            const notiMsg = `${trnxTypeD} of ${await Utility_Helper.bigNumberSafeConversion(
-              amount
-            )} ${trx_data?.coin?.coin_symbol.toUpperCase()} has been confirmed.`;
+            //const Addressdeposit: any = await bscProcessHelper.check_our_wallet_address(to_address);
+            if (addressDeposit) {
+              const toUserId: number = addressDeposit ? JSON.parse(addressDeposit)?.user_id : 0;
+              // const to_user_id: number = Addressdeposit ? Addressdeposit.user_id : 0;
+              const trnxTypeD: string = "Deposit";
+              /** update to adrs wallet balance */
+              if (toAddress !== fromAddress) {
+                if (txType !== TrnxTypeEnum.DAPP) {
+                  const balance: any = await walletHelper.updateBalance(
+                    toAddress, /// wallet_address,
+                    trx_data?.coin /// coin
+                  );
+                  await globalHelper.checkCoinInWallet(toAddress, trx_data?.coin, balance)
+                } else {
+                  await walletHelper.updateAllActiveCoinBalance(toAddress, coinFamily);
+                }
+              }
+              const notiMsg = `${trnxTypeD} of ${await utilityHelper.bigNumberSafeConversion(
+                amount
+              )} ${trx_data?.coin?.coin_symbol.toUpperCase()} has been confirmed.`;
 
-            const notifData: NotificationInterface = {
-              title: NotificationTypeEnum.DEPOSIT.toUpperCase(),
-              message: notiMsg,
-              amount: amount,
-              from_user_id: user_id,
-              to_user_id: to_user_id,
-              wallet_address: to_address,
-              tx_id: tx_row_id,
-              coin_symbol: coin_symbol,
-              coin_id: trx_data?.coin?.coin_id,
-              coin_family: trx_data?.coin?.coin_family,
-              tx_type: tx_type,
-              notification_type: trnxTypeD,
-              state: "confirmed"
-            };
-            Utility_Helper.SendNotification(notifData);
+              const notifData: NotificationInterface = {
+                title: NotificationTypeEnum.DEPOSIT.toUpperCase(),
+                message: notiMsg,
+                amount: amount,
+                from_user_id: userId,
+                to_user_id: toUserId,
+                wallet_address: toAddress,
+                tx_id: txRowId,
+                coin_symbol: coinSymbol,
+                coin_id: trx_data?.coin?.coin_id,
+                coin_family: trx_data?.coin?.coin_family,
+                tx_type: txType,
+                notification_type: trnxTypeD,
+                state: "confirmed"
+              };
+              utilityHelper.SendNotification(notifData);
+            }
+            return true;
           }
-          return true;
 
-        } else if (status_tx == BlockChainStatusEnum.FAILED) {
+        } else if (statusTx == BlockChainStatusEnum.FAILED) {
           let trnxTypeW: string = "Withdraw";
-          switch (tx_type) {
+          switch (txType) {
             case TrnxTypeEnum.DAPP:
               trnxTypeW = "Smart Contract Execution";
               break;
@@ -270,23 +353,23 @@ class UpdateInternalTrnxStatusProcess {
             default:
               break;
           }
-          const notiMsg = trx_data?.coin.token_type === "ERC721" ? `Withdraw of NFT(${trx_data?.coin.coin_symbol.toUpperCase()}) with token id ${amount} has been confirmed.` : `${trnxTypeW} of ${await Utility_Helper.bigNumberSafeConversion(amount)} ${trx_data?.coin.coin_symbol.toUpperCase()} has been failed.`;
+          const notiMsg = trx_data?.coin.token_type === "ERC721" ? `Withdraw of NFT(${trx_data?.coin.coin_symbol.toUpperCase()}) with token id ${amount} has been confirmed.` : `${trnxTypeW} of ${await utilityHelper.bigNumberSafeConversion(amount)} ${trx_data?.coin.coin_symbol.toUpperCase()} has been failed.`;
           const notifData: NotificationInterface = {
             title: trnxTypeW.toUpperCase(),
             message: notiMsg,
             amount: amount,
             from_user_id: 0,
-            to_user_id: user_id,
-            wallet_address: from_address,
-            tx_id: tx_row_id,
-            coin_symbol: coin_symbol,
+            to_user_id: userId,
+            wallet_address: fromAddress,
+            tx_id: txRowId,
+            coin_symbol: coinSymbol,
             coin_id: trx_data?.coin?.coin_id,
             coin_family: trx_data?.coin?.coin_family,
-            tx_type: tx_type,
+            tx_type: txType,
             notification_type: trnxTypeW,
             state: "failed"
           };
-          Utility_Helper.SendNotification(notifData);
+          utilityHelper.SendNotification(notifData);
 
           return true;
         } else {

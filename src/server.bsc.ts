@@ -1,12 +1,11 @@
 import kafkaHelper from "./config/kafka.helper";
 import {
+  readBlockProcess,
   depositWithdrawProcess,
   readInternalTxProcess,
   updateInternalTrnxStatusProcess,
   readBlockTrnxProcess,
-  readTransactionsProcess,
   updateBalanceProcess,
-  bscBlocksProcess,
   traceBlockBscProcess
 } from "./processes/index.process";
 import schedule from "node-schedule";
@@ -18,7 +17,6 @@ class BSCStartProcess {
     this.readBehinedBlockProcess();
     this.readSpecificBlock();
     this.startBlocksConsumers();
-    this.startBlockTrxConsumers();
     this.startDepositWithdrawConsumer();
     this.internalWithdrawalTxProcess();
     this.startInternalTxStatusUpdateConsumer();
@@ -40,12 +38,8 @@ class BSCStartProcess {
   //   }, 700);
   // }
 
-  private readBehinedBlockProcess() {
-    schedule.scheduleJob("*/2 * * * * *", async function () {
-      await bscBlocksProcess.readBehindBlocks()
-    });
-  }
- 
+  
+
 
   // Need to discuess this with team
   // private startBlocksConsumers() {
@@ -59,8 +53,21 @@ class BSCStartProcess {
   // }
   private readBlockProcess() {
     setInterval(async () => {
-      await bscBlocksProcess.readCurrentBlocks();
+      await readBlockProcess.readCurrentBlocks();
     }, 700);
+  }
+
+  private readBehinedBlockProcess() {
+    schedule.scheduleJob("*/2 * * * * *", async function () {
+      await readBlockProcess.readBehindBlock()
+    });
+  }
+
+
+  public readSpecificBlock() {
+    schedule.scheduleJob('*/1 * * * *', async function () {
+      await readBlockTrnxProcess.readSpecificBlock();
+    })
   }
 
   public async consumeTraceBlockBscTxsQueue() {
@@ -99,23 +106,20 @@ class BSCStartProcess {
   //   });
   // }
 
-  public readSpecificBlock() {
-    schedule.scheduleJob('*/1 * * * *', async function () {
-      await bscBlocksProcess.readSpecificBlock();
-    })
-  }
+  
 
 
 
 
-  public startBlockTrxConsumers() {
-    setTimeout(async () => {
-      // console.log("consume_read_block_queue >>>>>>");
-      await readTransactionsProcess.startBlockTxConsumer();
-      await readTransactionsProcess.startBehindBlockTxConsumer();
-      // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
-    }, 1000);
-  }
+  // public startBlockTrxConsumers() {
+  //   setTimeout(async () => {
+  //     // console.log("consume_read_block_queue >>>>>>");
+  //     await readTransactionsProcess.startBlockTxConsumer();
+  //     await readTransactionsProcess.startBehindBlockTxConsumer();
+  //     // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
+  //   }, 1000);
+  // }
+
   public async startDepositWithdrawConsumer() {
     setTimeout(async () => {
       await depositWithdrawProcess.startDepositWithdrawConsumer();

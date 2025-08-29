@@ -1,15 +1,12 @@
-import { Blockchain_Helper } from "../helpers/index";
+import { blockchainHelper } from "../helpers/index";
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
-import { KEYS } from "../enum";
-import { blocks_trnx } from "../interfaces/global_helper";
 import { BscOldBLockModel } from "../models";
-import { global_helper } from "../helpers/global_helper";
+import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt } from "ethers";
-import { blocksTrnx } from "../interfaces/global_helper";
-import { Utility_Helper } from "../helpers/utility.helper";
-import { Blockchain_Helper as bscEthers } from "../helpers/blockchain.helper";
+import { blocksTrnx } from "../interfaces/global.interface";
+import { utilityHelper } from "../helpers/utility.helper";
 import { TokenData } from "../interfaces/ether.interface";
 import { TrnxTypeEnum } from "../enum";
 import { TxType } from "../types/ERC20Tokens.types";
@@ -48,89 +45,240 @@ class ReadBlockTrnxProcess {
     }
 
     public startLatestBlockEvenConsumer = async () => {
-        const consumer = await kafkaHelper.kafka.consumer({
-            groupId: `${this.bsc_block_group}_even`,
-        });
-        await consumer.subscribe({
-            topic: `${this.bsc_block_topic}_even`,
-            fromBeginning: true,
-        });
-        await consumer.run({
-            eachMessage: async ({
-                topic,
-                partition,
-                message,
-            }: {
-                topic: any;
-                partition: any;
-                message: any;
-            }) => {
-                console.log('🚀 ~ startLatestBlockEvenConsumer topic', topic);
-                console.log('🚀 ~ startLatestBlockEvenConsumer message.value', message.value.toString());
-                await new Promise(resolve => setTimeout(resolve, 300));
-                const blockId = JSON.parse(message.value.toString());
-                this.getTxFromBlock(blockId);
-            },
-        }).catch((err: Error) => {
-            console.log('🔥 ~ startDepositWithdrawQueue consumer error', err);
-        });
+        let consumer: any = null;
+        let isConnected = false;
+
+        const connectConsumer = async () => {
+            try {
+
+                if (consumer) {
+                    await consumer.disconnect();
+                }
+
+                consumer = await kafkaHelper.kafka.consumer({
+                    groupId: `${this.bsc_block_group}_even`,
+                    // Add session timeout for better error handling
+                    sessionTimeout: 30000,
+                    // Add heartbeat interval
+                    heartbeatInterval: 3000,
+                });
+
+                await consumer.subscribe({
+                    topic: `${this.bsc_block_topic}_even`,
+                    fromBeginning: true, // ✅ Changed to false to prevent reprocessing
+                });
+
+                await consumer.run({
+                    // ✅ Add proper autoCommit configuration
+                    autoCommit: true,
+                    autoCommitInterval: 5000,
+                    autoCommitThreshold: 100,
+
+                    eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
+                        try {
+                            console.log('🚀 ~ startLatestBlockEvenConsumer topic', topic);
+                            console.log('🚀 ~ startLatestBlockEvenConsumer message.value', message.value.toString());
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                            const blockId = JSON.parse(message.value.toString());
+                            this.getBlockReceipts(blockId);
+                            this.getTraceBlock(blockId);
+
+                        } catch (error) {
+                            console.error(`❌ Error processing message:`, error);
+                        }
+                    },
+                });
+                isConnected = true;
+            } catch (error) {
+                console.error(`❌ Failed to connect consumer:`, error);
+                isConnected = false;
+                throw error;
+            }
+        };
+
+        // ✅ Add reconnection logic
+        const startWithReconnection = async () => {
+            while (true) {
+                try {
+                    if (!isConnected) {
+                        console.log(`🔄 Attempting to connect consumer startLatestBlockEvenConsumer...`);
+                        await connectConsumer();
+                    }
+
+                    // Keep the consumer alive
+                    await new Promise(resolve => setTimeout(resolve, 30000));
+
+                } catch (error) {
+                    console.error(`❌ Consumer connection error:`, error);
+                    isConnected = false;
+
+                    // Wait before retrying
+                    console.log(`⏳ Waiting 10 seconds before reconnecting...`);
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
+            }
+        };
+
+        // Start the consumer with reconnection
+        await startWithReconnection();
     };
 
     public startLatestBlockOddConsumer = async () => {
-        const consumer = await kafkaHelper.kafka.consumer({
-            groupId: `${this.bsc_block_group}_odd`,
-        });
-        await consumer.subscribe({
-            topic: `${this.bsc_block_topic}_odd`,
-            fromBeginning: true,
-        });
-        await consumer.run({
-            eachMessage: async ({
-                topic,
-                partition,
-                message,
-            }: {
-                topic: any;
-                partition: any;
-                message: any;
-            }) => {
-                console.log('🚀 ~ startLatestBlockOddConsumer topic', topic);
-                console.log('🚀 ~ startLatestBlockOddConsumer message.value', message.value.toString());
-                await new Promise(resolve => setTimeout(resolve, 350));
-                const blockId = JSON.parse(message.value.toString());
-                this.getTxFromBlock(blockId);
-            },
-        }).catch((err: Error) => {
-            console.log('🔥 ~ startDepositWithdrawQueue consumer error', err);
-        });
+        let consumer: any = null;
+        let isConnected = false;
+
+        const connectConsumer = async () => {
+            try {
+
+                if (consumer) {
+                    await consumer.disconnect();
+                }
+
+                consumer = await kafkaHelper.kafka.consumer({
+                    groupId: `${this.bsc_block_group}_odd`,
+                    // Add session timeout for better error handling
+                    sessionTimeout: 30000,
+                    // Add heartbeat interval
+                    heartbeatInterval: 3000,
+                });
+
+                await consumer.subscribe({
+                    topic: `${this.bsc_block_topic}_odd`,
+                    fromBeginning: true, // ✅ Changed to false to prevent reprocessing
+                });
+
+                await consumer.run({
+                    // ✅ Add proper autoCommit configuration
+                    autoCommit: true,
+                    autoCommitInterval: 5000,
+                    autoCommitThreshold: 100,
+
+                    eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
+                        try {
+                            console.log('🚀 ~ startLatestBlockOddConsumer topic', topic);
+                            console.log('🚀 ~ startLatestBlockOddConsumer message.value', message.value.toString());
+                            await new Promise(resolve => setTimeout(resolve, 350));
+                            const blockId = JSON.parse(message.value.toString());
+                            this.getBlockReceipts(blockId);
+                            this.getTraceBlock(blockId);
+
+                        } catch (error) {
+                            console.error(`❌ Error processing message:`, error);
+                        }
+                    },
+                });
+                isConnected = true;
+            } catch (error) {
+                console.error(`❌ Failed to connect consumer:`, error);
+                isConnected = false;
+                throw error;
+            }
+        };
+
+        // ✅ Add reconnection logic
+        const startWithReconnection = async () => {
+            while (true) {
+                try {
+                    if (!isConnected) {
+                        console.log(`🔄 Attempting to connect consumer startLatestBlockOddConsumer...`);
+                        await connectConsumer();
+                    }
+
+                    // Keep the consumer alive
+                    await new Promise(resolve => setTimeout(resolve, 30000));
+
+                } catch (error) {
+                    console.error(`❌ Consumer connection error:`, error);
+                    isConnected = false;
+
+                    // Wait before retrying
+                    console.log(`⏳ Waiting 10 seconds before reconnecting...`);
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
+            }
+        };
+
+        // Start the consumer with reconnection
+        await startWithReconnection();
     };
 
     public startBehindBlockConsumer = async () => {
-        const consumer = await kafkaHelper.kafka.consumer({
-            groupId: this.bsc_behind_block_group,
-        });
-        await consumer.subscribe({
-            topic: this.bsc_behind_block_topic,
-            fromBeginning: true,
-        });
-        await consumer.run({
-            eachMessage: async ({
-                topic,
-                partition,
-                message,
-            }: {
-                topic: any;
-                partition: any;
-                message: any;
-            }) => {
-                console.log('🚀 ~ startBehindBlockConsumer topic', topic);
-                console.log('🚀 ~ startBehindBlockConsumer message.value', message.value.toString());
-                const blockId = JSON.parse(message.value.toString());
-                this.getTxFromBlock(blockId);
-            },
-        }).catch((err: Error) => {
-            console.log('🔥 ~ startDepositWithdrawQueue consumer error', err);
-        });
+        let consumer: any = null;
+        let isConnected = false;
+
+        const connectConsumer = async () => {
+            try {
+
+                if (consumer) {
+                    await consumer.disconnect();
+                }
+
+                consumer = await kafkaHelper.kafka.consumer({
+                    groupId: this.bsc_behind_block_group,
+                    // Add session timeout for better error handling
+                    sessionTimeout: 30000,
+                    // Add heartbeat interval
+                    heartbeatInterval: 3000,
+                });
+
+                await consumer.subscribe({
+                    topic: this.bsc_behind_block_topic,
+                    fromBeginning: true, // ✅ Changed to false to prevent reprocessing
+                });
+
+                await consumer.run({
+                    // ✅ Add proper autoCommit configuration
+                    autoCommit: true,
+                    autoCommitInterval: 5000,
+                    autoCommitThreshold: 100,
+
+                    eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
+                        try {
+                            console.log('🚀 ~ startBehindBlockConsumer topic', topic);
+                            console.log('🚀 ~ startBehindBlockConsumer message.value', message.value.toString());
+                            await new Promise(resolve => setTimeout(resolve, 350));
+                            const blockId = JSON.parse(message.value.toString());
+                            this.getBlockReceipts(blockId);
+                            this.getTraceBlock(blockId);
+
+                        } catch (error) {
+                            console.error(`❌ Error processing message:`, error);
+                        }
+                    },
+                });
+                isConnected = true;
+            } catch (error) {
+                console.error(`❌ Failed to connect consumer:`, error);
+                isConnected = false;
+                throw error;
+            }
+        };
+
+        // ✅ Add reconnection logic
+        const startWithReconnection = async () => {
+            while (true) {
+                try {
+                    if (!isConnected) {
+                        console.log(`🔄 Attempting to connect consumer startBehindBlockConsumer...`);
+                        await connectConsumer();
+                    }
+
+                    // Keep the consumer alive
+                    await new Promise(resolve => setTimeout(resolve, 30000));
+
+                } catch (error) {
+                    console.error(`❌ Consumer connection error:`, error);
+                    isConnected = false;
+
+                    // Wait before retrying
+                    console.log(`⏳ Waiting 10 seconds before reconnecting...`);
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
+            }
+        };
+
+        // Start the consumer with reconnection
+        await startWithReconnection();
     };
 
     // public async getBlocks() {
@@ -185,12 +333,12 @@ class ReadBlockTrnxProcess {
     //         await global_helper.save_error_logs('BSC_readBlocks', err.message)
     //     }
     // }
-    
+
     //old function
     // private async getTxFromBlock(blockId: number, key: string) {
     //     try {
     //         console.log('blockId >>>>', blockId, 'key >>>>', key);
-    //         const blockInfo = await Blockchain_Helper.provider.getBlock(blockId, true);
+    //         const blockInfo = await blockchainHelper.provider.getBlock(blockId, true);
     //         if (!blockInfo) {
     //             console.log("No block info");
     //             await BscOldBLockModel.create({ block_number: blockId, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: blockId, end_block: blockId, status: 0 })
@@ -291,7 +439,7 @@ class ReadBlockTrnxProcess {
 
     // public async testingNode() {
     //     try {
-    //         const provider = Blockchain_Helper.provider;
+    //         const provider = blockchainHelper.provider;
 
     //         // Get Block Number
     //         const latestBlock = await provider.getBlockNumber();
@@ -324,111 +472,111 @@ class ReadBlockTrnxProcess {
     //         console.error("Error in testingNode>>", err)
     //     }
     // }
-    
+
     public collectCalls(calls: any[], depth: number = 0, results: any[] = [], txHash?: string): any[] {
         for (const call of calls) {
             if (call?.error) {
-              console.log("(call?.error", call?.error,'txHash >>>', txHash);
-            }else{
-              if (call?.value && Number(call.value) > 0) {
-                results.push({
-                  depth,
-                  type: call.type,
-                  txHash: txHash,
-                  value: call.value,
-                  callData: call,
-                });
-              }
-              // If nested calls exist, process them recursively
-              if (call?.calls?.length > 0) {
-                this.collectCalls(call.calls, depth + 1, results, txHash);
-              }
+                console.log("(call?.error", call?.error, 'txHash >>>', txHash);
+            } else {
+                if (call?.value && Number(call.value) > 0) {
+                    results.push({
+                        depth,
+                        type: call.type,
+                        txHash: txHash,
+                        value: call.value,
+                        callData: call,
+                    });
+                }
+                // If nested calls exist, process them recursively
+                if (call?.calls?.length > 0) {
+                    this.collectCalls(call.calls, depth + 1, results, txHash);
+                }
             }
-          }
-          return results;
-        
+        }
+        return results;
+
     }
 
     public async processTraces(response: any[]) {
         const allCalls: any[] = [];
-      
+
         if (response?.length > 0) {
-          for (const trace of response) {
-            const result = trace?.result;
-           
-            if(!result?.error){
-               // Top-level CALL
+            for (const trace of response) {
+                const result = trace?.result;
+
+                if (!result?.error) {
+                    // Top-level CALL
                     if (result?.type === 'CALL' && Number(result?.value) > 0) {
-                    
+
                         allCalls.push({
-                        depth: 0,
-                        type: result.type,
-                        value: result.value,
-                        txHash: trace.txHash,
-                        callData: result,
+                            depth: 0,
+                            type: result.type,
+                            value: result.value,
+                            txHash: trace.txHash,
+                            callData: result,
                         });
-                    
+
                     }
                     // Collect child calls if they exist
                     if (result?.calls?.length > 0) {
-                    const collected = this.collectCalls(result.calls, 1, [],trace.txHash);
-                    allCalls.push(...collected);
+                        const collected = this.collectCalls(result.calls, 1, [], trace.txHash);
+                        allCalls.push(...collected);
                     }
-            }else{
-                console.log("(result?.error", result?.error,'trace.txHash <<', trace.txHash);
+                } else {
+                    console.log("(result?.error", result?.error, 'trace.txHash <<', trace.txHash);
+                }
             }
         }
-        }
-      
+
         return allCalls;
-      }
-      
-  
-      public getTraceBlock = async (blockId: number) => {
+    }
+
+
+    public getTraceBlock = async (blockId: number) => {
         try {
-          console.log("INSIDE getTraceBlock", blockId);
-      
-          const hexBlockValue = ethers.toBeHex(blockId.toString());
-          const formattedBlockValue = hexBlockValue.replace(/^0x0+/g, '0x');
-      
-          const response = await Blockchain_Helper.provider.send("debug_traceBlockByNumber", [
-            formattedBlockValue,
-            { "tracer": "callTracer" }
-          ]);
-      
-          if (response?.length > 0) {
-            const allValueCalls = await this.processTraces(response);
-      
-            // console.log("All calls with value > 0:", allValueCalls);
-      
-            // Save to Kafka
-            for (const call of allValueCalls) {
-              const txReceipt: blocksTrnx = {
-                txId: call.txHash,
-                fromAddress: call.callData.from,
-                toAddress: call.callData.to,
-                value: call.value.toString(),
-                gasUsed: null,
-                gasPrice: null,
-                blockNumber: blockId,
-              };
-      
-            //   console.log(`Processed Tx at depth ${call.depth}`, txReceipt);
-              this.addTraceTxToQueue(txReceipt, config.KAFKA_TRANSACTIONS.TRACE_BLOCK_BSC_DEPOSIT_TOPIC);
+            console.log("INSIDE getTraceBlock", blockId);
+
+            const hexBlockValue = ethers.toBeHex(blockId.toString());
+            const formattedBlockValue = hexBlockValue.replace(/^0x0+/g, '0x');
+
+            const response = await blockchainHelper.provider.send("debug_traceBlockByNumber", [
+                formattedBlockValue,
+                { "tracer": "callTracer" }
+            ]);
+
+            if (response?.length > 0) {
+                const allValueCalls = await this.processTraces(response);
+
+                // console.log("All calls with value > 0:", allValueCalls);
+
+                // Save to Kafka
+                for (const call of allValueCalls) {
+                    const txReceipt: blocksTrnx = {
+                        txId: call.txHash,
+                        fromAddress: call.callData.from,
+                        toAddress: call.callData.to,
+                        value: call.value.toString(),
+                        gasUsed: null,
+                        gasPrice: null,
+                        blockNumber: blockId,
+                    };
+
+                    //   console.log(`Processed Tx at depth ${call.depth}`, txReceipt);
+                    this.addTraceTxToQueue(txReceipt, config.KAFKA_TRANSACTIONS.TRACE_BLOCK_BSC_DEPOSIT_TOPIC);
+                }
+
+            } else {
+                console.error("Error fetching data from QuickNode API.");
+                this.getTxFromBlock(blockId);
             }
-      
-          } else {
-            console.error("Error fetching data from QuickNode API.");
-            this.getTxFromBlock(blockId);
-          }
-      
+
         } catch (error) {
-          console.log("🔥 ~ getTraceBlock error", (error as Error).message);
-          this.getTxFromBlock(blockId);
+            console.log("🔥 ~ getTraceBlock error", (error as Error).message);
+            this.getTxFromBlock(blockId);
         }
-      };
-      
-    
+    };
+
+
     public getBlockReceipts = async (blockId: number) => {
         try {
             console.log("INSIDE getBlockReceipts")
@@ -454,7 +602,7 @@ class ReadBlockTrnxProcess {
     public async getTxFromBlock(blockId: number) {
         try {
             console.error("In getTxFromBlock>>.", blockId)
-            const blockInfo = await Blockchain_Helper.provider.getBlock(blockId, true);
+            const blockInfo = await blockchainHelper.provider.getBlock(blockId, true);
             if (!blockInfo) {
                 console.log("No block info");
                 await BscOldBLockModel.create({
@@ -476,7 +624,7 @@ class ReadBlockTrnxProcess {
             const transactionPromises = transactions.map(async (tx) => {
                 const amount: BigNumber = new BigNumber(tx?.value.toString());
                 if (amount.gt(0)) {
-                    const txReceipt: TransactionReceipt | null = await Blockchain_Helper.provider.getTransactionReceipt(tx?.hash);
+                    const txReceipt: TransactionReceipt | null = await blockchainHelper.provider.getTransactionReceipt(tx?.hash);
 
                     if (txReceipt?.status == 0) {
                         console.log("(txReceipt.status === false && txReceipt !== null");
@@ -501,14 +649,14 @@ class ReadBlockTrnxProcess {
             await Promise.allSettled(transactionPromises);
         } catch (err: any) {
             console.error("Error in getTxFromBlock:", (err as Error).message);
-            await global_helper.save_error_logs('Eth_readBehindBlock', err.message)
+            await globalHelper.save_error_logs('Eth_readBehindBlock', err.message)
         }
     }
 
     private fetchBlockReceipts = async (blockId: number) => {
         const hexBlockValue = ethers.toBeHex(blockId.toString());
         const formattedBlockValue = hexBlockValue.replace(/^0x0+/g, '0x');
-        return await Blockchain_Helper.provider.send("eth_getBlockReceipts", [formattedBlockValue]);
+        return await blockchainHelper.provider.send("eth_getBlockReceipts", [formattedBlockValue]);
     };
 
     private processTxReceipt = async (txReceipt: TransactionReceipt) => {
@@ -528,8 +676,8 @@ class ReadBlockTrnxProcess {
     private extractGasInfo = async (txReceipt: any) => {
         const gasUsed = txReceipt.gasUsed ? Number(txReceipt.gasUsed) : 0;
         const hexToNumberGasPrice = txReceipt?.effectiveGasPrice ? Number(txReceipt.effectiveGasPrice) : 0;
-        const txFee = await Utility_Helper.bigNumberSafeMath(gasUsed, '*', hexToNumberGasPrice);
-        const gasInEth = await Blockchain_Helper.convertWeiToBsc(txFee);
+        const txFee = await utilityHelper.bigNumberSafeMath(gasUsed, '*', hexToNumberGasPrice);
+        const gasInEth = await blockchainHelper.convertWeiToBsc(txFee);
 
         return {
             gasUsed: gasUsed,
@@ -566,7 +714,7 @@ class ReadBlockTrnxProcess {
                             const nativeWalletData: number = depositTx ? JSON.parse(depositTx) : null;
                             if (nativeWalletData) {
                                 console.log("contractInfo not exist in db 💥💥 inserting into db", log.address)
-                                const tokenDetail: TokenData | null = await bscEthers.tokenDetails(log.address);
+                                const tokenDetail: TokenData | null = await blockchainHelper.tokenDetails(log.address);
                                 if (tokenDetail) {
                                     const contractInfo = await bscProcessHelper.insertTokenAddressInDB(log.address, tokenDetail, nativeWalletData);
                                     if (contractInfo) {
@@ -665,7 +813,7 @@ class ReadBlockTrnxProcess {
 
     private calculateTokenAmount = async (data: string, decimals: number): Promise<number> => {
         const decimalPrecision = decimals.toString().length - 1;
-        return await Utility_Helper.bigNumberSafeMath(data, '/', Math.pow(10, decimalPrecision));
+        return await utilityHelper.bigNumberSafeMath(data, '/', Math.pow(10, decimalPrecision));
     };
 
     public async checkBnbDeposit(data: blocksTrnx) {
@@ -678,7 +826,7 @@ class ReadBlockTrnxProcess {
                 // console.log("inside checkEthDeposit this is data.toAddress ", data.toAddress)
 
                 const addresses = [data.fromAddress, data.toAddress].filter(Boolean);
-                
+
                 let txType = null;
                 if (addresses.length > 0) {
                     const results = await bscProcessHelper.getMultipleKeyValuePairs(`${config.BSC_WALLET_ADDRESS}`, addresses);
@@ -696,7 +844,7 @@ class ReadBlockTrnxProcess {
                 if (txType !== null) {
 
                     if (data.gasUsed == null && data.gasPrice == null) {
-                        const txReceipt: TransactionReceipt | null = await Blockchain_Helper.provider.getTransactionReceipt(data?.txId);
+                        const txReceipt: TransactionReceipt | null = await blockchainHelper.provider.getTransactionReceipt(data?.txId);
                         const gasUsed: number = Number(txReceipt?.gasUsed) || 0;
                         data.gasUsed = gasUsed;
                         data.gasPrice = Number(txReceipt?.gasPrice) || 0;
@@ -704,10 +852,10 @@ class ReadBlockTrnxProcess {
 
                     const gasUsed = data.gasUsed ? data.gasUsed : 0;
                     const effectiveGasPrice: number = Number(data.gasPrice) || 0;
-                    const txFee = await Utility_Helper.bigNumberSafeMath(gasUsed, '*', effectiveGasPrice);
-                    const gasInEth = await Blockchain_Helper.convertWeiToBsc(txFee);
+                    const txFee = await utilityHelper.bigNumberSafeMath(gasUsed, '*', effectiveGasPrice);
+                    const gasInEth = await blockchainHelper.convertWeiToBsc(txFee);
 
-                    const ethValue = await Blockchain_Helper.convertWeiToBsc((data.value ? data.value : 0));
+                    const ethValue = await blockchainHelper.convertWeiToBsc((data.value ? data.value : 0));
                     const amount = parseFloat(ethValue.toString());
 
                     const txData: TxType = {
@@ -732,7 +880,7 @@ class ReadBlockTrnxProcess {
             }
         } catch (error: any) {
             console.error("💥 ~ ~ check_eth_deposit error", (error as Error).message);
-            await global_helper.save_error_logs('ETH_check_deposit', error.message)
+            await globalHelper.save_error_logs('ETH_check_deposit', error.message)
 
         }
     }
@@ -770,7 +918,7 @@ class ReadBlockTrnxProcess {
             await kafkaHelper.produceMessage(queueName, data)
         } catch (err: any) {
             console.error("addTxToQueue", (err as Error).message);
-            await global_helper.save_error_logs('ETH_checkAddressInDB', err.message)
+            await globalHelper.save_error_logs('ETH_checkAddressInDB', err.message)
 
         }
     };
@@ -780,7 +928,7 @@ class ReadBlockTrnxProcess {
             await kafkaHelper.produceMessage(queueName, data)
         } catch (err: any) {
             console.error("addTxToQueue", (err as Error).message);
-            await global_helper.save_error_logs('ETH_checkAddressInDB', err.message)
+            await globalHelper.save_error_logs('ETH_checkAddressInDB', err.message)
 
         }
     };

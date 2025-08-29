@@ -5,7 +5,7 @@ import db from "../../config/db";
 interface CustomTokenCreationModel extends Optional<CustomTokenInterface, "id"> { }
 interface CustomTokenInstance extends Model<CustomTokenInterface, CustomTokenCreationModel>, CustomTokenInterface { }
 
-let dataObj = {
+const dataObj = {
     id: {
         type: DataTypes.INTEGER,
         allowNull: false,

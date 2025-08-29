@@ -3,40 +3,40 @@ import kafkaHelper from "../config/kafka.helper";
 import { CoinFamilyEnum } from "../enum";
 import { CoinInterface, CoinsModel } from "../models";
 import WalletModel from "../models/tables/model.wallets";
-import { Blockchain_Helper } from "./blockchain.helper";
-import { Utility_Helper } from "./utility.helper";
+import { blockchainHelper } from "./blockchain.helper";
+import { utilityHelper } from "./utility.helper";
 class WalletHelper {
     public bsc_pending_balance_update_topic = config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
 
-    public async Fetch_Balance(address: string, coin: CoinInterface,) {
+    public async fetchBalance(address: string, coin: CoinInterface,) {
         try {
             let balance: number | null = null;
             if (coin) {
                 switch (coin.coin_family) {
                     case CoinFamilyEnum.BNB:
-                        balance = await Blockchain_Helper.fetch_bnb_balance(address, coin);
+                        balance = await blockchainHelper.fetchBnbBalance(address, coin);
                         break;
                     default:
                         balance = 0;
                         break;
                 }
             }
-            return balance !== null ? Number(await Utility_Helper.exponentialToDecimal(balance)) : null;
+            return balance !== null ? Number(await utilityHelper.exponentialToDecimal(balance)) : null;
         } catch (err: any) {
-            console.error(`error WalletHelper Fetch_Balance error >>>`, err);
+            console.error(`error WalletHelper fetchBalance error >>>`, err);
             return null;
         }
     }
 
 
-    public async Update_Balance(wallet_address: string, coin: CoinInterface) {
+    public async updateBalance(wallet_address: string, coin: CoinInterface) {
         try {
             if (!wallet_address) {
                 console.error(`wallet_address missing >>> `);
                 return false;
             }
             /* fatch wallet balnce */
-            let balance: number | null = await this.Fetch_Balance(
+            let balance: number | null = await this.fetchBalance(
                 wallet_address,
                 coin
             );
@@ -70,12 +70,12 @@ class WalletHelper {
             }
             return balance;
         } catch (err: any) {
-            console.error(`WalletHelper Update_Balance error >>>`, err);
+            console.error(`WalletHelper updateBalance error >>>`, err);
             return null;
         }
     }
 
-    public async Update_all_active_coin_balance(wallet_address: string, coin_family: CoinFamilyEnum) {
+    public async updateAllActiveCoinBalance(wallet_address: string, coin_family: CoinFamilyEnum) {
         try {
             let address_coins: any = await WalletModel.findAll({
                 attributes: ["coin_id", "wallet_address"],
@@ -95,11 +95,11 @@ class WalletHelper {
                 }],
             })
             for (let i = 0; i < address_coins.length; i++) {
-                await this.Update_Balance(address_coins[i].wallet_address, address_coins[i].coin_data);
+                await this.updateBalance(address_coins[i].wallet_address, address_coins[i].coin_data);
             }
             return 1;
         } catch (err: any) {
-            console.error(`WalletHelper Update_all_active_coin_balance error >>>`, err);
+            console.error(`WalletHelper updateAllActiveCoinBalance error >>>`, err);
             return 0;
 
         }
@@ -109,22 +109,22 @@ class WalletHelper {
     // update balance queue
 
 
-    public async Update_Balance_Queue(wallet_address: string, coin: CoinInterface) {
+    public async updateBalanceQueue(wallet_address: string, coin: CoinInterface) {
         try {
             if (!wallet_address) {
                 console.error(`wallet_address missing >>> `);
                 return false;
             }
             /* fatch wallet balnce */
-            const balance: number | null = await this.Fetch_Balance(
+            const balance: number | null = await this.fetchBalance(
                 wallet_address,
                 coin
             );
             return balance;
         } catch (err: any) {
-            console.error(`WalletHelper Update_Balance error >>>`, err);
+            console.error(`WalletHelper updateBalanceQueue error >>>`, err);
             return null;
         }
     }
 }
-export let Wallet_Helper = new WalletHelper();
+export let walletHelper = new WalletHelper();

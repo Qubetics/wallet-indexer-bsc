@@ -3,14 +3,14 @@ import { Op } from "sequelize";
 import { BlockChainStatusEnum } from "../enum";
 import { CoinsModel, TrnxHistoryModel } from "../models";
 import kafkaHelper from "../config/kafka.helper";
-import { pending_trnx } from "../interfaces/global_helper";
+import { pendingTrnx } from "../interfaces/global.interface";
 
 class ReadInternalTxProcess {
 
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
 
   public getTransactionFromDB = async () => {
-    let tx: any = await TrnxHistoryModel.findAll({
+    const tx: any = await TrnxHistoryModel.findAll({
       attributes: ["tx_id", "coin_id"],
       include: [{
         model: CoinsModel,
@@ -26,7 +26,7 @@ class ReadInternalTxProcess {
     })
     if (tx.length > 0) {
       await Promise.all(tx.map(async (el: any) => {
-        const trnx: pending_trnx = {
+        const trnx: pendingTrnx = {
           tx_id: el.tx_id,
           coin_id: el.coin_id,
           is_token: el.coin_data.is_token,

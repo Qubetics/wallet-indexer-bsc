@@ -2,10 +2,10 @@ import { TxType, WebHookTxType } from "../types/ERC20Tokens.types";
 import { CoinInterface, NotificationInterface, TrnxHistoryModel } from "../models";
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
-import { BlockChainStatusEnum, CoinFamilyEnum, NotificationTypeEnum, TrnxTypeEnum, TxReqTypesEnum } from "../enum";
-import { Utility_Helper, Wallet_Helper } from "../helpers"
+import { BlockChainStatusEnum, NotificationTypeEnum, TrnxTypeEnum, TxReqTypesEnum } from "../enum";
+import { utilityHelper, walletHelper } from "../helpers"
 import { Op } from "sequelize";
-import { global_helper } from "../helpers/global_helper";
+import { globalHelper } from "../helpers/global.helper";
 import WalletModel from "../models/tables/model.wallets";
 import kafkaHelper from "../config/kafka.helper";
 
@@ -15,30 +15,79 @@ class DepositWithdrawProcess {
   public bsc_deposit_withdraw_topic = config.KAFKA_TRANSACTIONS.DEPOSIT_WITHDRAW_TOPIC;
 
   public startDepositWithdrawConsumer = async () => {
-    let consumer = await kafkaHelper.kafka.consumer({
-      groupId: this.bsc_deposit_withdraw_group_id,
-    });
-    await consumer.subscribe({
-      topic: this.bsc_deposit_withdraw_topic,
-      fromBeginning: true,
-    });
-    await consumer.run({
-      eachMessage: async ({
-        topic,
-        partition,
-        message,
-      }: {
-        topic: any;
-        partition: any;
-        message: any;
-      }) => {
-        console.log('🚀 ~ startDepositWithdrawConsumer topic', topic);
-        console.log('🚀 ~ startDepositWithdrawConsumer message.value', message.value.toString());
-        await this.checkIfOurTx(JSON.parse(message.value.toString()));
-      },
-    }).catch((err: Error) => {
-      console.log('🔥 ~ startDepositWithdrawQueue consumer error', err);
-    });
+    let consumer: any = null;
+    let isConnected = false;
+
+    const connectConsumer = async () => {
+      try {
+
+        if (consumer) {
+          await consumer.disconnect();
+        }
+
+        consumer = await kafkaHelper.kafka.consumer({
+          groupId: this.bsc_deposit_withdraw_group_id,
+          // Add session timeout for better error handling
+          sessionTimeout: 30000,
+          // Add heartbeat interval
+          heartbeatInterval: 3000,
+        });
+
+        await consumer.subscribe({
+          topic: this.bsc_deposit_withdraw_topic,
+          fromBeginning: true, // ✅ Changed to false to prevent reprocessing
+        });
+
+        await consumer.run({
+          // ✅ Add proper autoCommit configuration
+          autoCommit: true,
+          autoCommitInterval: 5000,
+          autoCommitThreshold: 100,
+
+          eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
+            try {
+              console.log('🚀 ~ startDepositWithdrawConsumer topic', topic);
+              console.log('🚀 ~ startDepositWithdrawConsumer message.value', message.value.toString());
+              await this.checkIfOurTx(JSON.parse(message.value.toString()));
+
+            } catch (error) {
+              console.error(`❌ Error processing message:`, error);
+            }
+          },
+        });
+        isConnected = true;
+      } catch (error) {
+        console.error(`❌ Failed to connect consumer:`, error);
+        isConnected = false;
+        throw error;
+      }
+    };
+
+    // ✅ Add reconnection logic
+    const startWithReconnection = async () => {
+      while (true) {
+        try {
+          if (!isConnected) {
+            console.log(`🔄 Attempting to connect consumer startDepositQueue...`);
+            await connectConsumer();
+          }
+
+          // Keep the consumer alive
+          await new Promise(resolve => setTimeout(resolve, 30000));
+
+        } catch (error) {
+          console.error(`❌ Consumer connection error:`, error);
+          isConnected = false;
+
+          // Wait before retrying
+          console.log(`⏳ Waiting 10 seconds before reconnecting...`);
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        }
+      }
+    };
+
+    // Start the consumer with reconnection
+    await startWithReconnection();
   };
 
   private checkIfOurTx = async (data: TxType) => {
@@ -70,12 +119,12 @@ class DepositWithdrawProcess {
         trnx_fee: data.trnx_fee
       };
       console.log(webhookTx, "DEPOSIT");
-      await this.SaveNewTrnx(webhookTx);
+      await this.saveNewTrnx(webhookTx);
     }
 
   };
 
-  private SaveNewTrnx = async (
+  private saveNewTrnx = async (
     trnx_data: WebHookTxType
   ) => {
     try {
@@ -107,7 +156,7 @@ class DepositWithdrawProcess {
           raw: true,
         });
         if (checkOldTrnx == null) {
-          let check_coin_in_wallet: any = await WalletModel.findOne({
+          const checkCoinInWallet: any = await WalletModel.findOne({
             attributes: ["coin_id", "coin_family"],
             where: {
               wallet_address: from_address,
@@ -115,7 +164,7 @@ class DepositWithdrawProcess {
             },
             raw: true
           })
-          if (!check_coin_in_wallet) {
+          if (!checkCoinInWallet) {
             console.error(`Coin not exist under this wallet.`);
             return false;
           }
@@ -175,12 +224,12 @@ class DepositWithdrawProcess {
       if (Addressdeposit) {
         const trnxTypeD: string = "Deposit";
         /** update to adrs wallet balance */
-        const balance: any = await Wallet_Helper.Update_Balance(
+        const balance: any = await walletHelper.updateBalance(
           to_address, /// wallet_address,
           coin /// coin
         );
-        await global_helper.check_coin_in_wallet(to_address, coin, balance)
-        const notiMsg = `${trnxTypeD} of ${await Utility_Helper.bigNumberSafeConversion(
+        await globalHelper.checkCoinInWallet(to_address, coin, balance)
+        const notiMsg = `${trnxTypeD} of ${await utilityHelper.bigNumberSafeConversion(
           amount
         )} ${coin?.coin_symbol?.toUpperCase()} has been confirmed.`;
 
@@ -199,7 +248,7 @@ class DepositWithdrawProcess {
           notification_type: trnxTypeD,
           state: "confirmed"
         };
-        Utility_Helper.SendNotification(notifData);
+        utilityHelper.SendNotification(notifData);
       }
 
       if (AddressWithdraw) {
@@ -222,21 +271,21 @@ class DepositWithdrawProcess {
             break;
         }
 
-        await Wallet_Helper.Update_Balance(
+        await walletHelper.updateBalance(
           from_address, /// wallet_address,
           coin /// coin
         );
         if (coin.is_token) {
           const native_coin: any =
             await bscProcessHelper.checkIfContract('NativeCoin');
-          await Wallet_Helper.Update_Balance(
+          await walletHelper.updateBalance(
             from_address, /// wallet_address,
             native_coin /// coin
           );
         }
 
 
-        const notiMsg = `${trnxTypeW} of ${await Utility_Helper.bigNumberSafeConversion(
+        const notiMsg = `${trnxTypeW} of ${await utilityHelper.bigNumberSafeConversion(
           amount
         )} ${coin.coin_symbol?.toUpperCase()} has been confirmed.`;
 
@@ -256,12 +305,12 @@ class DepositWithdrawProcess {
           state: "confirmed"
         };
 
-        Utility_Helper.SendNotification(notifData);
+        utilityHelper.SendNotification(notifData);
       }
 
       return true;
     } catch (error: any) {
-      console.error(`SaveTrnx_Process-SaveNewTrnx error >>>`, error);
+      console.error(`SaveTrnx_Process-saveNewTrnx error >>>`, error);
       return false;
     }
   };

@@ -1,7 +1,7 @@
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
 import { BscOldBLockModel } from "../models";
-import { global_helper } from "../helpers/global_helper";
+import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 
 class ReadBlockProcess {
@@ -18,7 +18,7 @@ class ReadBlockProcess {
     }
 
 
-    public async getBlocks() {
+    public async readCurrentBlocks() {
         try {
             const startBlock: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.START_BLOCK);
             const endBlock: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.END_BLOCK);
@@ -63,11 +63,11 @@ class ReadBlockProcess {
                 }
             } else {
                 console.log(" no old block and no new block")
-                await global_helper.save_error_logs('Bsc_setBlocks', 'No old block no new block')
+                await globalHelper.save_error_logs('Bsc_setBlocks', 'No old block no new block')
             }
         } catch (err: any) {
             console.error("Error in getBlocks", err)
-            await global_helper.save_error_logs('bsc_getBlocks', err.message)
+            await globalHelper.save_error_logs('bsc_getBlocks', err.message)
         }
     }
 
@@ -109,27 +109,27 @@ class ReadBlockProcess {
             }
         } catch (err: any) {
             console.error("Error in readBehindBlock>>", err)
-            await global_helper.save_error_logs('BSC_readBehindBlock', err.message)
+            await globalHelper.save_error_logs('BSC_readBehindBlock', err.message)
         }
     }
 
-    public async readSpecificBlock() {
-        try {
-            console.log("Entere into readSpecificBlock>>>")
-            const specificBlocks: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC)
-            const specificBlock: any = JSON.parse(specificBlocks);
-            if (specificBlock && Number(specificBlock) > 0) {
-                console.table({ SPECIFIC_BLOCK: specificBlock })
-                await kafkaHelper.produceMessage(`${this.bsc_behind_block_topic}`, specificBlock);
-                await bscProcessHelper.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC, '0')
-            } else {
-                console.log("Specific block is not present>>>>")
-                await bscProcessHelper.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC, '0')
-            }
-        } catch (error: any) {
-            console.error("Error in readSpecificBlock>>>", error)
-        }
-    }
+    // public async readSpecificBlock() {
+    //     try {
+    //         console.log("Entere into readSpecificBlock>>>")
+    //         const specificBlocks: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC)
+    //         const specificBlock: any = JSON.parse(specificBlocks);
+    //         if (specificBlock && Number(specificBlock) > 0) {
+    //             console.table({ SPECIFIC_BLOCK: specificBlock })
+    //             await kafkaHelper.produceMessage(`${this.bsc_behind_block_topic}`, specificBlock);
+    //             await bscProcessHelper.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC, '0')
+    //         } else {
+    //             console.log("Specific block is not present>>>>")
+    //             await bscProcessHelper.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.SPECIFIC_BLOCK_BSC, '0')
+    //         }
+    //     } catch (error: any) {
+    //         console.error("Error in readSpecificBlock>>>", error)
+    //     }
+    // }
 
 }
 

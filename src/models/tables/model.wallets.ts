@@ -7,7 +7,7 @@ interface WalletInstance
   extends Model<WalletInterface, WalletCreationModel>,
   WalletInterface { }
 
-let dataObj = {
+const dataObj = {
   wallet_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -38,10 +38,10 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: false,
   },
-  default_wallet: {
-    type: DataTypes.TINYINT,
-    allowNull: true,
-  },
+  // default_wallet: {
+  //   type: DataTypes.TINYINT,
+  //   allowNull: true,
+  // },
   status: {
     type: DataTypes.TINYINT,
     allowNull: true,
@@ -50,13 +50,13 @@ let dataObj = {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
-  is_private_wallet: {
-    type: DataTypes.TINYINT,
-    allowNull: true,
-  },
+  // is_private_wallet: {
+  //   type: DataTypes.TINYINT,
+  //   allowNull: true,
+  // },
 };
 
-let dataObjIndex = {
+const dataObjIndex = {
   indexes: [
     {
       unique: false,
@@ -70,10 +70,10 @@ let dataObjIndex = {
       unique: false,
       fields: ["coin_id"],
     },
-    {
-      unique: false,
-      fields: ["default_wallet"],
-    },
+    // {
+    //   unique: false,
+    //   fields: ["default_wallet"],
+    // },
     {
       unique: false,
       fields: ["status"],

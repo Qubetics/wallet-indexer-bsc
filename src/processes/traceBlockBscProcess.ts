@@ -1,7 +1,7 @@
 
 import { config } from "../config/config";
 import kafkaHelper from "../config/kafka.helper";
-import { bscBlocksProcess } from "./process.blockNewFlow";
+import { readBlockTrnxProcess } from "./readBlockTranxProcess";
 
 class TraceBlockBscProcess {
 
@@ -39,7 +39,7 @@ class TraceBlockBscProcess {
             try {
               // console.log("🚀 ~ startTraceBlockEthProcess topic >>>>", topic);
               // console.log("🚀 ~ startTraceBlockEthProcess message.value >>>>", message.value.toString());
-              await bscBlocksProcess.checkBnbDeposit(JSON.parse(message.value.toString()))
+              await readBlockTrnxProcess.checkBnbDeposit(JSON.parse(message.value.toString()))
 
             } catch (error) {
               console.error(`❌ Error processing message:`, error);
@@ -80,10 +80,6 @@ class TraceBlockBscProcess {
     // Start the consumer with reconnection
     await startWithReconnection();
   };
-
-
-
-
 
 }
 

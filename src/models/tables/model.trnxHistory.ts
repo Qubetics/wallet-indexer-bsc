@@ -9,7 +9,7 @@ interface TrnxHistoryInstance
     extends Model<ITrnxHistoryInterface, TrnxHistoryCreationModel>,
     ITrnxHistoryInterface { }
 
-let dataObj = {
+const dataObj = {
     id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -114,7 +114,7 @@ let dataObj = {
     },
 };
 
-let dataObjIndex = {
+const dataObjIndex = {
     createdAt: 'created_at',
     updatedAt: 'updated_at'
 }

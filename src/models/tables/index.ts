@@ -2,25 +2,25 @@ import CoinsModel from './model.coins';
 import DeviceTokenModel from './model.deviceToken';
 import NotificationModel from './model.notifications';
 import TrnxHistoryModel from './model.trnxHistory';
-import BscOldBLockModel from './model.bsc_old_block';
-import SettingsModel from './model.settings';
-import CatchErrorMsgsModel from './model_catch_error_logs';
-import RewardHistoryModel from './model.reward_history';
+import BscOldBLockModel from './model.bscOldBlock';
+// import SettingsModel from './model.settings';
+import CatchErrorMsgsModel from './model.catchErrorLogs';
+// import RewardHistoryModel from './model.reward_history';
 import WalletModel from './model.wallets';
-import ReferralModel from './model.referral';
-import CoinPriceInFiatModel from './model.coin_price_fiat';
-import CustomTokennModel from './model.custom_tokens';
+// import ReferralModel from './model.referral';
+// import CoinPriceInFiatModel from './model.coinPriceFiat';
+import CustomTokennModel from './model.customTokens';
 export {
     CoinsModel,
     DeviceTokenModel,
     NotificationModel,
     TrnxHistoryModel,
     BscOldBLockModel,
-    SettingsModel,
+    // SettingsModel,
     CatchErrorMsgsModel,
-    RewardHistoryModel,
+    // RewardHistoryModel,
     WalletModel,
-    ReferralModel,
-    CoinPriceInFiatModel,
+    // ReferralModel,
+    // CoinPriceInFiatModel,
     CustomTokennModel
 }

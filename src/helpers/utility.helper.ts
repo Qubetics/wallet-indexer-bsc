@@ -176,4 +176,4 @@ class UtilityHelper {
     }
   }
 }
-export let Utility_Helper = new UtilityHelper();
+export let utilityHelper = new UtilityHelper();

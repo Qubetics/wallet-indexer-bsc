@@ -1,7 +1,7 @@
 import { config } from "../config";
 import kafkaHelper from "../config/kafka.helper";
 import { CoinFamilyEnum } from "../enum";
-import { Wallet_Helper } from "../helpers";
+import { walletHelper } from "../helpers";
 import { CoinsModel, WalletModel } from "../models";
 import bscProcessHelper from "./process.helper";
 
@@ -9,36 +9,79 @@ class UpdateBalanceProcess {
   public bsc_pending_balance_update_topic =
     config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_TOPIC;
 
+
   public updateBalanceConsumer = async () => {
-    const consumer = await kafkaHelper.kafka.consumer({
-      groupId: config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_GROUP_ID,
-    });
-    await consumer.subscribe({
-      topic: this.bsc_pending_balance_update_topic,
-      fromBeginning: true,
-    });
-    await consumer
-      .run({
-        eachMessage: async ({
-          topic,
-          partition,
-          message,
-        }: {
-          topic: any;
-          partition: any;
-          message: any;
-        }) => {
-          // console.log("🚀 ~ startTxStatusUpdateQueue topic >>>>", topic);
-          // console.log(
-          //   "🚀 ~ startTxStatusUpdateQueue message.value >>>>",
-          //   message.value.toString()
-          // );
-          await this.updateBalance(JSON.parse(message.value.toString()));
-        },
-      })
-      .catch((err: Error) => {
-        console.log("🔥 ~ ~ startTxStatusUpdateQueue error", err);
-      });
+    let consumer: any = null;
+    let isConnected = false;
+
+    const connectConsumer = async () => {
+      try {
+
+        if (consumer) {
+          await consumer.disconnect();
+        }
+
+        consumer = await kafkaHelper.kafka.consumer({
+          groupId: config.config.KAFKA_BALANCE.BSC_PENDING_BALANCE_UPDATE_GROUP_ID,
+          // Add session timeout for better error handling
+          sessionTimeout: 30000,
+          // Add heartbeat interval
+          heartbeatInterval: 3000,
+        });
+
+        await consumer.subscribe({
+          topic: this.bsc_pending_balance_update_topic,
+          fromBeginning: true, // ✅ Changed to false to prevent reprocessing
+        });
+
+        await consumer.run({
+          // ✅ Add proper autoCommit configuration
+          autoCommit: true,
+          autoCommitInterval: 5000,
+          autoCommitThreshold: 100,
+
+          eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
+            try {
+              await this.updateBalance(JSON.parse(message.value.toString()));
+
+            } catch (error) {
+              console.error(`❌ Error processing message:`, error);
+            }
+          },
+        });
+        isConnected = true;
+      } catch (error) {
+        console.error(`❌ Failed to connect consumer:`, error);
+        isConnected = false;
+        throw error;
+      }
+    };
+
+    // ✅ Add reconnection logic
+    const startWithReconnection = async () => {
+      while (true) {
+        try {
+          if (!isConnected) {
+            console.log(`🔄 Attempting to connect consumer updateBalanceConsumer...`);
+            await connectConsumer();
+          }
+
+          // Keep the consumer alive
+          await new Promise(resolve => setTimeout(resolve, 30000));
+
+        } catch (error) {
+          console.error(`❌ Consumer connection error:`, error);
+          isConnected = false;
+
+          // Wait before retrying
+          console.log(`⏳ Waiting 10 seconds before reconnecting...`);
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        }
+      }
+    };
+
+    // Start the consumer with reconnection
+    await startWithReconnection();
   };
 
   public updateBalance = async (data: any) => {
@@ -47,7 +90,7 @@ class UpdateBalanceProcess {
         console.log(`Balance update attempts exceeded (5) for address: ${data.wallet_address}`);
         return;
       }
-      const balance: any = await Wallet_Helper.Update_Balance_Queue(
+      const balance: any = await walletHelper.updateBalanceQueue(
         data.wallet_address,
         data.coin_data
       );

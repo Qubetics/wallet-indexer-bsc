@@ -1,5 +1,5 @@
 import { BooleanEnum, TokenStandard } from "../enum";
-import { Utility_Helper } from "./utility.helper";
+import { utilityHelper } from "./utility.helper";
 import { config } from '../config';
 import { ethers } from 'ethers';
 import { TokenData } from "../interfaces/ether.interface";
@@ -18,13 +18,13 @@ class BlockchainHelper {
     public initialize() { }
 
     //BNB
-    public async fetch_bnb_balance(address: string, coin: any) {
+    public async fetchBnbBalance(address: string, coin: any) {
         try {
             let balance: number | null = null;
             if (coin.is_token == BooleanEnum.true) {
                 switch (coin.token_type.toLowerCase()) {
                     case TokenStandard.BEP20:
-                        balance = await this.bep20_token_balance(
+                        balance = await this.bep20TokenBalance(
                             address,
                             coin.token_address ? coin.token_address : null
                         )
@@ -34,16 +34,16 @@ class BlockchainHelper {
                         break;
                 }
             } else {
-                balance = await this.bnb_coin_balance(address);
+                balance = await this.bnbCoinBalance(address);
             }
             return balance;
         } catch (err: any) {
-            console.error(`Bsc_Helper BSC_Fetch_Balance error >>`, err);
+            console.error(`Bsc_Helper fetchBnbBalance error >>`, err);
             return null;
         }
     }
 
-    public async bep20_token_balance(wallet_address: string, contract_address: string | null) {
+    public async bep20TokenBalance(wallet_address: string, contract_address: string | null) {
         try {
             if (contract_address) {
                 const contract = new ethers.Contract(
@@ -53,30 +53,30 @@ class BlockchainHelper {
                 );
                 const decimals = Number(await contract.decimals())
                 const balance = await contract.balanceOf(wallet_address);
-                const tokenBalance = await Utility_Helper.bigNumberSafeMath(
+                const tokenBalance = await utilityHelper.bigNumberSafeMath(
                     balance, '/', Math.pow(10, decimals)
                 );
-                const tokBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
+                const tokBalance: string = await utilityHelper.exponentialToDecimal(tokenBalance)
                 return Number(tokBalance);
             }
             return null;
         } catch (err: any) {
-            console.error(`BscHelper BEP20_Token_Fetch_Balance error >>`, err);
+            console.error(`BscHelper bep20TokenBalance error >>`, err);
             return null;
             // throw err;
         }
     }
 
-    public async bnb_coin_balance(address: string) {
+    public async bnbCoinBalance(address: string) {
         try {
             const balance = await this.provider.getBalance(address);
-            const tokenBalance = await Utility_Helper.bigNumberSafeMath(
+            const tokenBalance = await utilityHelper.bigNumberSafeMath(
                 balance, '/', Math.pow(10, 18)
             );
-            const coinBalance: string = await Utility_Helper.exponentialToDecimal(tokenBalance)
+            const coinBalance: string = await utilityHelper.exponentialToDecimal(tokenBalance)
             return Number(coinBalance);
         } catch (err: any) {
-            console.error(`Bsc_Helper Coin_Fetch_Balance error >>`, err);
+            console.error(`Bsc_Helper bnbCoinBalance error >>`, err);
             return null;
             // throw err;
         }
@@ -94,25 +94,25 @@ class BlockchainHelper {
 
     public async tokenDetails(tokenAddress: string) {
         try {
-          const contract = new ethers.Contract(tokenAddress, config.config.CONTRACT_ABI, this.provider);
-          const [decimals, name, symbol] = await Promise.all([
-            contract.decimals(),
-            contract.name(),
-            contract.symbol()
-          ]);
-    
-          const data: TokenData = {
-            decimals: Number(decimals),
-            name,
-            symbol
-          };
-    
-          return data;
+            const contract = new ethers.Contract(tokenAddress, config.config.CONTRACT_ABI, this.provider);
+            const [decimals, name, symbol] = await Promise.all([
+                contract.decimals(),
+                contract.name(),
+                contract.symbol()
+            ]);
+
+            const data: TokenData = {
+                decimals: Number(decimals),
+                name,
+                symbol
+            };
+
+            return data;
         } catch (err: any) {
-          console.error("tokenDetails", err)
-          return null;
+            console.error("tokenDetails", err)
+            return null;
         }
-      }
+    }
 
 }
-export let Blockchain_Helper = new BlockchainHelper();
+export let blockchainHelper = new BlockchainHelper();

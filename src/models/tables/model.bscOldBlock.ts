@@ -7,7 +7,7 @@ interface BscOldBlockInstance
     extends Model<BscOldBlockInterface, BscOldBlockCreationModel>,
     BscOldBlockInterface { }
 
-let dataObj = {
+const dataObj = {
     id: {
         primaryKey: true,
         type: DataTypes.INTEGER,
@@ -47,6 +47,6 @@ let dataObjIndex = {
 }
 
 
-const BscOldBLockModel = db.db_write.define<BscOldBlockInstance>("bsc_old_blocks", dataObj, dataObjIndex);
+const bscOldBLockModel = db.db_write.define<BscOldBlockInstance>("bsc_old_blocks", dataObj, dataObjIndex);
 
-export default BscOldBLockModel;
+export default bscOldBLockModel;

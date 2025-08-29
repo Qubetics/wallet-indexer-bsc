@@ -4,9 +4,9 @@ import { CoinInterface, CoinsModel, BscOldBLockModel, WalletInterface } from "..
 import redisClient from "../config/redis";
 import { promisify } from "util";
 import { config } from "../config/config";
-import { BooleanEnum, CoinFamilyEnum, TokenStandard } from "../enum";
-import { global_helper } from "../helpers/global_helper";
-import { Blockchain_Helper } from "../helpers";
+import { TokenStandard } from "../enum";
+import { globalHelper } from "../helpers/global.helper";
+import { blockchainHelper } from "../helpers";
 import { Op } from "sequelize";
 import kafkaHelper from "../config/kafka.helper";
 
@@ -47,7 +47,7 @@ class BscProcessHelper {
 
   public setBlocks = async (field: string, key: string, minBlockConfirmation: number, newBlock: number | null) => {
     try {
-      let latestBlock = await Blockchain_Helper.provider.getBlockNumber();
+      let latestBlock = await blockchainHelper.provider.getBlockNumber();
       console.log('latestBlock <<<', latestBlock);
       console.log('minBlockConfirmation <<<', minBlockConfirmation);
       console.log('key <<<', key);
@@ -63,7 +63,7 @@ class BscProcessHelper {
       }
     } catch (err: any) {
       console.error("Error in  getBlocks", err)
-      await global_helper.save_error_logs('BSC_setBlocks', err.message)
+      await globalHelper.save_error_logs('BSC_setBlocks', err.message)
     }
   }
 
@@ -77,14 +77,14 @@ class BscProcessHelper {
 
   public async diff_blocks_add_in_db(current_block: number, old_block: number) {
     try {
-    
+
       const dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block, status: 0 }
       console.log("dataToInsert>>>>", dataToInsert)
       await BscOldBLockModel.create(dataToInsert)
       return true;
     } catch (err: any) {
       console.error("💥 ~ Error in diff_blocks_add_in_redis.", err)
-      await global_helper.save_error_logs('BSC_diff_blocks_add_in_db', err.message)
+      await globalHelper.save_error_logs('BSC_diff_blocks_add_in_db', err.message)
       return false;
     }
   }
@@ -141,7 +141,7 @@ class BscProcessHelper {
       // redisClient.set(config.TOKEN_TYPE_BSC || "", JSON.stringify(tokens));
     } catch (err: any) {
       console.error('fetchERC20Tokens >>>>>', err);
-      await global_helper.save_error_logs('BSC_fetchERC20Tokens', err.message)
+      await globalHelper.save_error_logs('BSC_fetchERC20Tokens', err.message)
     }
   }
 
@@ -312,7 +312,7 @@ class BscProcessHelper {
     userId: number
   ) {
     try {
-     
+
       const coinData: any = {
         coin_name: name,
         coin_symbol: symbol.toUpperCase(),
@@ -333,7 +333,7 @@ class BscProcessHelper {
         graph_source: null,
         is_on_trading_view: 1,
       };
-      const response: any = await global_helper.coinCreate(coinData);
+      const response: any = await globalHelper.coinCreate(coinData);
       console.log("🚀 ~ processHelper ~ response:", response)
 
       coinData.coin_id = response.coin_id;
@@ -350,16 +350,16 @@ class BscProcessHelper {
       }
 
       //update  token in redis hash 
-      await global_helper.updateTokenInRedisHash(redisCoinData);
+      await globalHelper.updateTokenInRedisHash(redisCoinData);
       //insert token in custom token table 
-      await global_helper.customTokenCreate({
+      await globalHelper.customTokenCreate({
         coin_id: coinData.coin_id,
         user_id: userId,
       });
       return redisCoinData;
     } catch (err: any) {
       console.error("Error in add_coin_to_table>>", err);
-      await global_helper.save_error_logs("add_coin_to_table", err.message);
+      await globalHelper.save_error_logs("add_coin_to_table", err.message);
       return null;
     }
   }
@@ -380,7 +380,7 @@ class BscProcessHelper {
 
       //check if token already exist in db
       let coinDataExist: any = await CoinsModel.findOne({
-        attributes:[
+        attributes: [
           "coin_id",
           "coin_status",
           "added_by",
@@ -398,10 +398,10 @@ class BscProcessHelper {
         raw: true
       });
 
-      if(coinDataExist){
+      if (coinDataExist) {
         return coinDataExist;
       }
-      
+
 
       //if token not exist in db then add it to db
       const coinData: any = await this.addCoinToTable(
