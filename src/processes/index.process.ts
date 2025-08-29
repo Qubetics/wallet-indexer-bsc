@@ -1,6 +1,6 @@
 // export * from "./readBlocksProcess";
 export * from './process.blockNewFlow';
-
+export * from './processedTraceBlockBsc';
 export * from './readBlockTranxProcess';
 export * from './readTranxProcess';
 export * from "./depositWithdrawProcess";

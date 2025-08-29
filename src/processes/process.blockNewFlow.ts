@@ -294,7 +294,7 @@ class BscBlockProcess {
                 console.log("No block info");
                 await BscOldBLockModel.create({
                     block_number: blockId,
-                    coin_family: config.STATIC_COIN_FAMILY.ETH,
+                    coin_family: config.STATIC_COIN_FAMILY.BSC,
                     start_block: blockId,
                     end_block: blockId,
                     status: 0
@@ -328,7 +328,7 @@ class BscBlockProcess {
                         gasUsed: Number(gasUsed.toString()),
                         gasPrice: gasPrice,
                     }
-                    await this.checkEthDeposit(blockTransaction);
+                    await this.checkBnbDeposit(blockTransaction);
                 }
             });
 
@@ -424,11 +424,6 @@ class BscBlockProcess {
         }
     };
 
-    private isNFTTransfer = (log: any, nftInfo: any): boolean => {
-        return nftInfo && Object.keys(nftInfo)?.length > 0 &&
-            log.topics[1] !== undefined &&
-            log.topics[2] !== undefined;
-    };
 
     private isTokenTransfer = (log: any, contractInfo: any): boolean => {
         return contractInfo && Object.keys(contractInfo)?.length > 0 &&
@@ -454,47 +449,6 @@ class BscBlockProcess {
         return excludedTopics.includes(topic);
     };
 
-    private processNFTTransfer = async (
-        log: any,
-        gasInfo: any,
-        nftInfo: any,
-        processedTokens: Set<string>
-    ) => {
-        // Avoid processing the same NFT token multiple times in one transaction
-        if (processedTokens.has(nftInfo.token_address)) {
-            return;
-        }
-
-        const transferData: any = await this.getTransferEventDetail(
-            nftInfo.token_address,
-            log.blockNumber
-        );
-
-        if (!transferData?.length) {
-            console.log("Not get transfer data.");
-            return;
-        }
-
-        processedTokens.add(nftInfo.token_address);
-
-        const fromAddress = transferData[0]?.args[0];
-        const toAddress = transferData[0]?.args[1];
-        const tokenId = ethers.toNumber(transferData[0]?.args[2]);
-
-        const txData: TxType = {
-            txId: transferData[0].transactionHash,
-            fromAddress: fromAddress,
-            toAddress: toAddress,
-            token: nftInfo,
-            amount: tokenId,
-            blockId: log.blockNumber,
-            isNFTToken: true,
-            txType: null,
-            trnx_fee: gasInfo.trnx_fee
-        };
-
-        await this.checkAddressInDB(txData);
-    };
 
     private processTokenTransfer = async (log: any, gasInfo: any, contractInfo: any) => {
         const amount = await this.calculateTokenAmount(log.data, contractInfo.decimals);
@@ -549,7 +503,7 @@ class BscBlockProcess {
         return await Utility_Helper.bigNumberSafeMath(data, '/', Math.pow(10, decimalPrecision));
     };
 
-    public async checkEthDeposit(data: blocksTrnx) {
+    public async checkBnbDeposit(data: blocksTrnx) {
         try {
             /** for check the eth deposit */
             if (
@@ -666,30 +620,7 @@ class BscBlockProcess {
         }
     };
 
-    private getTransferEventDetail = async (
-        tokenAddress: string,
-        blockId: number
-    ) => {
-        try {
-            const contract = new ethers.Contract(
-                tokenAddress,
-                config.ERC721ABI,
-                Blockchain_Helper.provider
-            );
-
-            const filter = contract.filters.Transfer();
-            const events = await contract.queryFilter(
-                filter,
-                blockId,
-                blockId
-            );
-
-            return events;
-        } catch (error) {
-            console.log("🔥 ~ getTransferEventDetail error", (error as Error).message);
-            return [];
-        }
-    };
+ 
 }
 
 export const bscBlocksProcess = new BscBlockProcess();

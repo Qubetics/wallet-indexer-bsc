@@ -6,7 +6,8 @@ import {
   readBlockTrnxProcess,
   readTransactionsProcess,
   updateBalanceProcess,
-  bscBlocksProcess
+  bscBlocksProcess,
+  traceBlockBscProcess
 } from "./processes/index.process";
 import schedule from "node-schedule";
 class BSCStartProcess {
@@ -14,7 +15,7 @@ class BSCStartProcess {
     // this.read_block_process();
     this.connectKafka();
     this.readBlockProcess();
-    // this.readBehinedBlockProcess();
+    this.readBehinedBlockProcess();
     this.readSpecificBlock();
     this.startBlocksConsumers();
     this.startBlockTrxConsumers();
@@ -23,7 +24,7 @@ class BSCStartProcess {
     this.startInternalTxStatusUpdateConsumer();
     // this.startUpdateBalanceConsumer();
     // this.updateBalanceByWallet();
-    
+    this.consumeTraceBlockBscTxsQueue();
   }
   private async connectKafka() {
     await kafkaHelper.connect();
@@ -39,11 +40,11 @@ class BSCStartProcess {
   //   }, 700);
   // }
 
-  // private readBehinedBlockProcess() {
-  //   schedule.scheduleJob("*/2 * * * * *", async function () {
-  //     readBlockProcess.readBehindBlock();
-  //   });
-  // }
+  private readBehinedBlockProcess() {
+    schedule.scheduleJob("*/2 * * * * *", async function () {
+      await bscBlocksProcess.readBehindBlocks()
+    });
+  }
  
 
   // Need to discuess this with team
@@ -56,12 +57,17 @@ class BSCStartProcess {
   //     // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
   //   }, 1000);
   // }
-
-  public readBlockProcess() {
-    schedule.scheduleJob("*/8 * * * * *", async function () {
+  private readBlockProcess() {
+    setInterval(async () => {
       await bscBlocksProcess.readCurrentBlocks();
-      await bscBlocksProcess.readBehindBlocks()
-    });
+    }, 700);
+  }
+
+  public async consumeTraceBlockBscTxsQueue() {
+    setTimeout(async () => {
+      console.log("consumer TraceBlockBscTxsQueue started 🔆🔆🔆");
+      await traceBlockBscProcess.startTraceBlockBscProcess();
+    }, 1000);
   }
 
   private startBlocksConsumers() {
