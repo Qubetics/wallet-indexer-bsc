@@ -27,6 +27,9 @@ export const config = {
     SPECIFIC_BLOCK_BSC: zookeeperConfig.config.SPECIFIC_BLOCK_BSC
   },
 
+  MORALIS_TRADINGVIEW_TOPIC: zookeeperConfig.config.MORALIS_TRADING_VIEW_TOPIC,
+
+
   // added till now
   NODE: { BNB_RPC_URL: zookeeperConfig.config.BNB_RPC_URL },
   /**
@@ -46,7 +49,9 @@ export const config = {
     DEPOSIT_WITHDRAW_GROUP_ID: zookeeperConfig.config.BSC_DEPOSIT_WITHDRAW_GROUP_ID,
     DEPOSIT_WITHDRAW_TOPIC: zookeeperConfig.config.BSC_DEPOSIT_WITHDRAW_TOPIC,
     BSC_PENDING_WITHDRAWAL_TX_TOPIC: zookeeperConfig.config.BSC_PENDING_WITHDRAWAL_TX_TOPIC,
-    BSC_PENDING_WITHDRAWAL_TX_GROUP_ID: zookeeperConfig.config.BSC_PENDING_WITHDRAWAL_TX_GROUP_ID
+    BSC_PENDING_WITHDRAWAL_TX_GROUP_ID: zookeeperConfig.config.BSC_PENDING_WITHDRAWAL_TX_GROUP_ID,
+    TRACE_BLOCK_BSC_DEPOSIT_TOPIC: "trace_block_bsc_deposit_topic",
+    TRACE_BLOCK_BSC_DEPOSIT_GROUP_ID: "trace_block_bsc_deposit_group_id"
   },
   KAFKA_BALANCE: {
     BSC_PENDING_BALANCE_UPDATE_TOPIC: zookeeperConfig.config.BSC_PENDING_BALANCE_UPDATE_TOPIC,

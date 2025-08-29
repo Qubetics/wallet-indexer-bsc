@@ -2,6 +2,10 @@ import { BooleanEnum, TokenStandard } from "../enum";
 import { Utility_Helper } from "./utility.helper";
 import { config } from '../config';
 import { ethers } from 'ethers';
+import { TokenData } from "../interfaces/ether.interface";
+
+
+
 
 class BlockchainHelper {
     public provider: ethers.JsonRpcProvider;
@@ -87,6 +91,28 @@ class BlockchainHelper {
             return 0;
         }
     }
+
+    public async tokenDetails(tokenAddress: string) {
+        try {
+          const contract = new ethers.Contract(tokenAddress, config.config.CONTRACT_ABI, this.provider);
+          const [decimals, name, symbol] = await Promise.all([
+            contract.decimals(),
+            contract.name(),
+            contract.symbol()
+          ]);
+    
+          const data: TokenData = {
+            decimals: Number(decimals),
+            name,
+            symbol
+          };
+    
+          return data;
+        } catch (err: any) {
+          console.error("tokenDetails", err)
+          return null;
+        }
+      }
 
 }
 export let Blockchain_Helper = new BlockchainHelper();

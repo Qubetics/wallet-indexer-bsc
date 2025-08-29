@@ -4,10 +4,11 @@ import { CoinInterface, CoinsModel, BscOldBLockModel, WalletInterface } from "..
 import redisClient from "../config/redis";
 import { promisify } from "util";
 import { config } from "../config/config";
-import { BooleanEnum, CoinFamilyEnum } from "../enum";
+import { BooleanEnum, CoinFamilyEnum, TokenStandard } from "../enum";
 import { global_helper } from "../helpers/global_helper";
 import { Blockchain_Helper } from "../helpers";
 import { Op } from "sequelize";
+import kafkaHelper from "../config/kafka.helper";
 
 class BscProcessHelper {
   public CoinsInterface: CoinInterface[];
@@ -25,6 +26,21 @@ class BscProcessHelper {
       return value;
     } catch (err: any) {
       console.error('getKeyValuePair >>>>', err);
+      return null;
+    }
+  }
+
+  public async getMultipleKeyValuePairs(keyName: string, fields: string[]) {
+    try {
+      const upperFields = fields.map(f => f.toUpperCase());
+      return new Promise((resolve, reject) => {
+        redisClient.hmget(keyName, ...upperFields, (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      });
+    } catch (err: any) {
+      console.error('getMultipleKeyValuePairs >>>>', err);
       return null;
     }
   }
@@ -47,7 +63,7 @@ class BscProcessHelper {
       }
     } catch (err: any) {
       console.error("Error in  getBlocks", err)
-      await global_helper.save_error_logs('MATIC_setBlocks', err.message)
+      await global_helper.save_error_logs('BSC_setBlocks', err.message)
     }
   }
 
@@ -59,26 +75,10 @@ class BscProcessHelper {
     }
   }
 
-  public diff_blocks_add_in_db = async (current_block: number, old_block: number) => {
+  public async diff_blocks_add_in_db(current_block: number, old_block: number) {
     try {
-      let value_exist: any = await this.getKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.NODE_ALERT_BSC)
-      if (value_exist) {
-        let setvalue: number = Number(value_exist) + 1;
-        if (Number(value_exist) <= 100) {
-          await this.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.NODE_ALERT_BSC, setvalue.toString())
-          if (Number(value_exist) == 0 || Number(value_exist) == 5 || Number(value_exist) == 10 || Number(value_exist) == 20 || Number(value_exist) == 50 || Number(value_exist) == 75 || Number(value_exist) == 100) {
-            let email_body = `<p>Bscereum Node Issue ${Number(value_exist)}</p><p>Current block running = ${current_block}.</p><p>Old Block = ${old_block}.</p>`;
-            // await global_helper.send_mail(config.NODE_ISSUE_ALERT_EMAIL, email_body, `Bsc Node Issue ${Number(value_exist)}`);
-          } else {
-            console.log("no email")
-          }
-        } else {
-          console.log("Number(value_exist) > 100")
-        }
-      } else {
-        await this.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.NODE_ALERT_BSC, '0')
-      }
-      let dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block, status: 0 }
+    
+      const dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block, status: 0 }
       console.log("dataToInsert>>>>", dataToInsert)
       await BscOldBLockModel.create(dataToInsert)
       return true;
@@ -114,31 +114,6 @@ class BscProcessHelper {
     }
   }
 
-  public fetchWalletAddress = async () => {
-    try {
-      const getaddressQuery = `SELECT ws.user_id,ws.wallet_address as address, ws.wallet_name FROM wallets ws FORCE INDEX (coin_family) JOIN coins cs ON ws.coin_id = cs.coin_id WHERE cs.coin_family = ${config.STATIC_COIN_FAMILY.BNB} GROUP BY ws.wallet_address`;
-      const addresses: any = await database.db_write.query(
-        getaddressQuery,
-        { type: QueryTypes.SELECT }
-      );
-      for await (let wallet of addresses) {
-        let findAddress = await bscProcessHelper.getKeyValuePair(
-          `${config.BSC_WALLET_ADDRESS}`,
-          wallet.address.toUpperCase()
-        );
-        if (!findAddress) {
-          this.setKeyValuePair(
-            `${config.BSC_WALLET_ADDRESS}`,
-            wallet.address.toUpperCase(),
-            JSON.stringify(wallet)
-          );
-        }
-      }
-    } catch (error) {
-      console.error('💥 ~ fetchAllWalletAddress error', error);
-    }
-  };
-
   public fetchERC20Tokens = async () => {
     try {
       let tokens: any = await CoinsModel.findAll({
@@ -169,6 +144,32 @@ class BscProcessHelper {
       await global_helper.save_error_logs('BSC_fetchERC20Tokens', err.message)
     }
   }
+
+  public fetchWalletAddress = async () => {
+    try {
+      const getaddressQuery = `SELECT ws.user_id,ws.wallet_address as address, ws.wallet_name FROM wallets ws FORCE INDEX (coin_family) JOIN coins cs ON ws.coin_id = cs.coin_id WHERE cs.coin_family = ${config.STATIC_COIN_FAMILY.BNB} GROUP BY ws.wallet_address`;
+      const addresses: any = await database.db_write.query(
+        getaddressQuery,
+        { type: QueryTypes.SELECT }
+      );
+      for await (let wallet of addresses) {
+        let findAddress = await bscProcessHelper.getKeyValuePair(
+          `${config.BSC_WALLET_ADDRESS}`,
+          wallet.address.toUpperCase()
+        );
+        if (!findAddress) {
+          this.setKeyValuePair(
+            `${config.BSC_WALLET_ADDRESS}`,
+            wallet.address.toUpperCase(),
+            JSON.stringify(wallet)
+          );
+        }
+      }
+    } catch (error) {
+      console.error('💥 ~ fetchAllWalletAddress error', error);
+    }
+  };
+
 
   public checkIfContract = async (address: string) => {
     try {
@@ -233,11 +234,11 @@ class BscProcessHelper {
 
   public check_our_wallet_address = async (address: string) => {
     try {
-      let wallet_data: any = await this.getKeyValuePair(config.BSC_WALLET_ADDRESS, address);
-      if (wallet_data) {
-        console.log("wallet_Data>>>>>>>>", wallet_data)
+      const walletData: any = await this.getKeyValuePair(config.BSC_WALLET_ADDRESS, address);
+      if (walletData) {
+        console.log("walletData>>>>>>>>", walletData)
       }
-      return JSON.parse(wallet_data);
+      return JSON.parse(walletData);
     } catch (err: any) {
       console.error('check_our_wallet_address >>>>>', err);
       return null;
@@ -298,6 +299,145 @@ class BscProcessHelper {
       console.error(`behindBlocks >>>`, err);
       return null;
     }
+  }
+
+  private async addCoinToTable(
+    tokenAddress: string,
+    symbol: string,
+    name: string,
+    coinFamily: number,
+    tokenType: string,
+    decimals: any,
+    currentUTCDate: any,
+    userId: number
+  ) {
+    try {
+     
+      const coinData: any = {
+        coin_name: name,
+        coin_symbol: symbol.toUpperCase(),
+        coin_image: null,
+        cmc_id: 0,
+        coin_family: coinFamily,
+        coin_status: 1,
+        is_token: 1,
+        is_on_cmc: 1,
+        for_swap: 0,
+        added_by: "user",
+        token_type: tokenType.toUpperCase(),
+        decimals: Math.pow(10, parseInt(decimals)),
+        token_address: tokenAddress,
+        created_at: currentUTCDate,
+        updated_at: currentUTCDate,
+        graph_pair: null,
+        graph_source: null,
+        is_on_trading_view: 1,
+      };
+      const response: any = await global_helper.coinCreate(coinData);
+      console.log("🚀 ~ processHelper ~ response:", response)
+
+      coinData.coin_id = response.coin_id;
+      const redisCoinData = {
+        coin_id: coinData.coin_id,
+        is_token: coinData.is_token,
+        token_address: coinData.token_address,
+        coin_family: coinData.coin_family,
+        decimals: coinData.decimals,
+        token_type: coinData.token_type,
+        coin_symbol: coinData.coin_symbol,
+        added_by: coinData.added_by,
+        for_swap: coinData.for_swap
+      }
+
+      //update  token in redis hash 
+      await global_helper.updateTokenInRedisHash(redisCoinData);
+      //insert token in custom token table 
+      await global_helper.customTokenCreate({
+        coin_id: coinData.coin_id,
+        user_id: userId,
+      });
+      return redisCoinData;
+    } catch (err: any) {
+      console.error("Error in add_coin_to_table>>", err);
+      await global_helper.save_error_logs("add_coin_to_table", err.message);
+      return null;
+    }
+  }
+
+  public async insertTokenAddressInDB(tokenAddress: string, tokenDetail: any, nativeWalletData: any) {
+    try {
+      console.log("data in insertTokenAddressInDB", nativeWalletData)
+      const userId = nativeWalletData.user_id;
+      const coinFamily = config.STATIC_COIN_FAMILY.BNB;
+      const tokenType = TokenStandard.BEP20;
+      const decimals = tokenDetail.decimals;
+      const symbol = tokenDetail.symbol;
+      const name = tokenDetail.name;
+      const currentUTCDate: string = new Date()
+        .toISOString()
+        .replace(/T/, " ")
+        .replace(/\..+/, "");
+
+      //check if token already exist in db
+      let coinDataExist: any = await CoinsModel.findOne({
+        attributes:[
+          "coin_id",
+          "coin_status",
+          "added_by",
+          "coin_family",
+          "token_address",
+          "is_token",
+          "token_type",
+          "decimals",
+          "coin_symbol",
+        ],
+        where: {
+          token_address: tokenAddress,
+          coin_family: coinFamily
+        },
+        raw: true
+      });
+
+      if(coinDataExist){
+        return coinDataExist;
+      }
+      
+
+      //if token not exist in db then add it to db
+      const coinData: any = await this.addCoinToTable(
+        tokenAddress,
+        symbol,
+        name,
+        coinFamily,
+        tokenType,
+        decimals,
+        currentUTCDate,
+        userId
+      );
+
+
+      if (
+        coinFamily == config.STATIC_COIN_FAMILY.ETH
+      ) {
+        const redisTokenData: any = {
+          coin_family: coinFamily,
+          token_address: tokenAddress,
+        };
+
+        //Todo : Need  to confirm from barjinder sir  if we need to produce message to kafka or not 
+        await kafkaHelper.produceMessage(
+          config.MORALIS_TRADINGVIEW_TOPIC,
+          redisTokenData
+        );
+      }
+
+      return coinData;
+
+    } catch (error) {
+      console.error(`insertTokenAddressInDB >>>`, error);
+      return null;
+    }
+
   }
 
 }
