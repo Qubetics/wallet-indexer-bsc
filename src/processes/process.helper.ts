@@ -417,7 +417,7 @@ class BscProcessHelper {
 
 
       if (
-        coinFamily == config.STATIC_COIN_FAMILY.ETH
+        coinFamily == config.STATIC_COIN_FAMILY.BNB
       ) {
         const redisTokenData: any = {
           coin_family: coinFamily,
