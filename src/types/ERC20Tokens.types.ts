@@ -37,7 +37,7 @@ export type WebHookTxType = {
   from_address: string;
   to_address: string;
   amount: number;
-  block_id: number;
+  block_id: number | string;
   coin: CoinInterface;
   isNFTToken: boolean;
   status: string;
