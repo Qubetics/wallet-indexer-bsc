@@ -7,7 +7,7 @@ interface DeviceTokenInstance
   extends Model<DeviceTokenInterface, DeviceTokenCreationModel>,
   DeviceTokenInterface { }
 
-let dataObj = {
+const dataObj = {
   id: {
     primaryKey: true,
     type: DataTypes.INTEGER,
@@ -44,7 +44,7 @@ let dataObj = {
   },
 };
 
-let dataObjIndex = {
+const dataObjIndex = {
   indexes: [
     {
       unique: false,

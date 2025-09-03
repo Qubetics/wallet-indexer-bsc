@@ -29,8 +29,20 @@ const dataObj = {
         allowNull: true,
     },
 };
+const dataObjIndex = {
+    indexes: [
+        {
+            unique: false,
+            fields: ["user_id"],
+        },
+        {
+            unique: false,
+            fields: ["coin_id"],
+        },
+    ],
+};
 
 
-const CustomTokennModel = db.db_write.define<CustomTokenInstance>("custom_tokens", dataObj);
+const CustomTokennModel = db.db_write.define<CustomTokenInstance>("custom_tokens", dataObj, dataObjIndex);
 
 export default CustomTokennModel;

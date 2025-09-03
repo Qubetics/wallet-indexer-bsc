@@ -64,19 +64,31 @@ const dataObjIndex = {
     },
     {
       unique: false,
+      fields: ["wallet_name"],
+    },
+    {
+      unique: false,
       fields: ["wallet_address"],
     },
     {
       unique: false,
       fields: ["coin_id"],
     },
-    // {
-    //   unique: false,
-    //   fields: ["default_wallet"],
-    // },
+    {
+      unique: false,
+      fields: ["coin_family"],
+    },
+    {
+      unique: false,
+      fields: ["balance"],
+    },
     {
       unique: false,
       fields: ["status"],
+    },
+    {
+      unique: false,
+      fields: ["created_at"],
     },
   ],
 };
