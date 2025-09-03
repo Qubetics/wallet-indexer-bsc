@@ -1,7 +1,7 @@
 import { config } from "../config/config";
 import { BlockChainStatusEnum, BooleanEnum, NotificationTypeEnum, TokenStandard, TrnxTypeEnum } from "../enum";
 import { NotificationInterface, TrnxHistoryModel } from "../models";
-import { utilityHelper, walletHelper, blockchainHelper } from "../helpers";
+import { utilityHelper, walletHelper, blockchainHelper, dbHelper } from "../helpers";
 import bscProcessHelper from "./process.helper";
 import { Op } from "sequelize";
 import { globalHelper } from "../helpers/global.helper";
@@ -306,7 +306,7 @@ class UpdateInternalTrnxStatusProcess {
                     toAddress, /// wallet_address,
                     trx_data?.coin /// coin
                   );
-                  await globalHelper.checkCoinInWallet(toAddress, trx_data?.coin, balance)
+                  await dbHelper.checkCoinInWallet(toAddress, trx_data?.coin, balance)
                 } else {
                   await walletHelper.updateAllActiveCoinBalance(toAddress, coinFamily);
                 }

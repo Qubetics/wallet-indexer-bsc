@@ -21,8 +21,19 @@ class ReadBlockProcess {
 
     public async readCurrentBlocks() {
         try {
-            const startBlock: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.START_BLOCK);
-            const endBlock: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.END_BLOCK);
+            const results = await bscProcessHelper.getMultipleKeyValuePairs(config.REDISKEYS.BSC_BLOCKS, [config.REDISKEYS.START_BLOCK, config.REDISKEYS.END_BLOCK]);
+            console.log("🚀 ~ EthBlockProcess ~ readCurrentBlocks ~ results:", results)
+
+            // Validate results array
+            if (!Array.isArray(results) || results.length < 2) {
+                console.error("Invalid results from Redis operation:", results);
+                return;
+            }
+            const [startBlock, endBlock] = results;
+
+            // const startBlock: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.START_BLOCK);
+            // const endBlock: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.END_BLOCK);
+
             if (!startBlock) {
                 console.log("No block present in old block")
                 await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.START_BLOCK, this.minBlockConfirmation, null)
