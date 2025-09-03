@@ -13,8 +13,8 @@ class BSCStartProcess {
   constructor() {
     // this.read_block_process();
     this.connectKafka();
-    this.readBlockProcess();
-    this.readBehinedBlockProcess();
+    // this.readBlockProcess();
+    // this.readBehinedBlockProcess();
     this.readSpecificBlock();
     this.startBlocksConsumers();
     this.startDepositWithdrawConsumer();
@@ -66,9 +66,9 @@ class BSCStartProcess {
   
   public readSpecificBlock() {
     console.log("readSpecificBlock started after 1 min 🔆🔆🔆");
-    // schedule.scheduleJob('*/15 * * * * *', async function () {
-    
-      schedule.scheduleJob('*/1 * * * *', async function () {
+    schedule.scheduleJob('*/15 * * * * *', async function () {
+
+      // schedule.scheduleJob('*/1 * * * *', async function () {
 
       await readBlockTrnxProcess.readSpecificBlock();
     })

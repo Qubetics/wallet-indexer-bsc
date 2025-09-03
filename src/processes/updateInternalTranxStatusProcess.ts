@@ -228,7 +228,7 @@ class UpdateInternalTrnxStatusProcess {
         coin_symbol: trxData.coin.coinSymbol,
         coin_family: trxData.coin.coinFamily,
         cmc_id: trxData.coin.cmcId,
-        token_address: trxData.coin.isToken === true ? trxData.coin.tokenAddress : trxData.coin.coinSymbol,
+        token_address: Number(trxData.coin.isToken) === Number(BooleanEnum.true) ? trxData.coin.tokenAddress : trxData.coin.coinSymbol,
         added_by: trxData.coin.addedBy
       }
       if (txUpdateRes) {
@@ -245,8 +245,8 @@ class UpdateInternalTrnxStatusProcess {
               if (txType !== TrnxTypeEnum.DAPP) {
                 const native_coin: any = await bscProcessHelper.checkIfContract('NativeCoin');
                 await walletHelper.updateBalance(fromAddress, native_coin);
-                console.log("trx_data.coin?.token_type>>>>", trxData)
-                if (trxData?.coin?.isToken === true && trxData.coin?.tokenType?.toLowerCase() === TokenStandard.BEP20.toLowerCase()) {
+
+                if (Number(trxData?.coin?.isToken) === Number(BooleanEnum.true) && trxData.coin?.tokenType?.toLowerCase() === TokenStandard.BEP20.toLowerCase()) {
                   /** Update User ERC20 Token Balance */
                   await walletHelper.updateBalance(fromAddress, coinData);
                 }
