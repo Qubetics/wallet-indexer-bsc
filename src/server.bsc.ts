@@ -13,8 +13,8 @@ class BSCStartProcess {
   constructor() {
     // this.read_block_process();
     this.connectKafka();
-    // this.readBlockProcess();
-    // this.readBehinedBlockProcess();
+    this.readBlockProcess();
+    this.readBehinedBlockProcess();
     this.readSpecificBlock();
     this.startBlocksConsumers();
     this.startDepositWithdrawConsumer();
@@ -64,7 +64,7 @@ class BSCStartProcess {
   }
 
   
-  public readSpecificBlock() {
+  private readSpecificBlock() {
     console.log("readSpecificBlock started after 1 min 🔆🔆🔆");
     schedule.scheduleJob('*/15 * * * * *', async function () {
 
@@ -74,7 +74,7 @@ class BSCStartProcess {
     })
   }
 
-  public async consumeTraceBlockBscTxsQueue() {
+  private async consumeTraceBlockBscTxsQueue() {
     setTimeout(async () => {
       console.log("consumer TraceBlockBscTxsQueue started 🔆🔆🔆");
       await traceBlockBscProcess.startTraceBlockBscProcess();
@@ -124,29 +124,29 @@ class BSCStartProcess {
   //   }, 1000);
   // }
 
-  public async startDepositWithdrawConsumer() {
+  private async startDepositWithdrawConsumer() {
     setTimeout(async () => {
       await depositWithdrawProcess.startDepositWithdrawConsumer();
     }, 1000);
   }
-  public internalWithdrawalTxProcess() {
+  private internalWithdrawalTxProcess() {
     schedule.scheduleJob("*/10 * * * * *", async function () {
       await readInternalTxProcess.getTransactionFromDB();
     });
   }
-  public async startInternalTxStatusUpdateConsumer() {
+  private async startInternalTxStatusUpdateConsumer() {
     setTimeout(async () => {
       await updateInternalTrnxStatusProcess.startTxStatusUpdateConsumer();
     }, 1000);
   }
 
-  public async startUpdateBalanceConsumer() {
+  private async startUpdateBalanceConsumer() {
     setTimeout(async () => {
       await updateBalanceProcess.updateBalanceConsumer();
     }, 1000);
   }
 
-  public async updateBalanceByWallet() {
+  private async updateBalanceByWallet() {
     schedule.scheduleJob("*/2 * * * *", async function () {
       await updateBalanceProcess.updateWalletBalance();
     });
