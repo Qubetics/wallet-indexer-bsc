@@ -27,3 +27,17 @@ export interface pendingTrnx {
     token_type: string | null,
     token_address: string
 }
+
+export interface txData {
+    coin: {
+      coin_id: number,
+      is_token: boolean,
+      token_type: string | null,
+      token_address: string
+    };
+    status: string;
+    txid: string;
+    gasReverted: number | undefined;
+    fromAddress: string;
+    tx_fee: number
+  }

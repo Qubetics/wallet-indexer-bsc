@@ -66,7 +66,9 @@ class BSCStartProcess {
   
   public readSpecificBlock() {
     console.log("readSpecificBlock started after 1 min 🔆🔆🔆");
-    schedule.scheduleJob('*/1 * * * *', async function () {
+    // schedule.scheduleJob('*/15 * * * * *', async function () {
+      schedule.scheduleJob('*/1 * * * *', async function () {
+
       await readBlockTrnxProcess.readSpecificBlock();
     })
   }

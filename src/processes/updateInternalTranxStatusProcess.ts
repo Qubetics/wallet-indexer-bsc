@@ -1,13 +1,13 @@
 import { config } from "../config/config";
 import { BlockChainStatusEnum, BooleanEnum, NotificationTypeEnum, TokenStandard, TrnxTypeEnum } from "../enum";
 import { NotificationInterface, TrnxHistoryModel } from "../models";
-import { utilityHelper, walletHelper, blockchainHelper } from "../helpers";
+import { utilityHelper, walletHelper, blockchainHelper, dbHelper } from "../helpers";
 import bscProcessHelper from "./process.helper";
 import { Op } from "sequelize";
 import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt, TransactionResponse } from "ethers";
-import { pendingTrnx } from "../interfaces/global.interface";
+import { pendingTrnx, txData } from "../interfaces/global.interface";
 class UpdateInternalTrnxStatusProcess {
 
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
@@ -161,33 +161,21 @@ class UpdateInternalTrnxStatusProcess {
     }
   };
 
-  private sendTxUpdate = async (txData: {
-    coin: {
-      coin_id: number,
-      is_token: boolean,
-      token_type: string | null,
-      token_address: string
-    };
-    status: string;
-    txid: string;
-    gasReverted: number | undefined;
-    fromAddress: string;
-    tx_fee: number
-  }) => {
+  private sendTxUpdate = async (txData: txData ) => {
     try {
       console.log('txData.coin >>', txData.coin);
-      let coin_data: any = {};
+      let coinData: any = {};
       if (!txData.coin?.is_token) {
         console.log('in case of coin');
-        coin_data = await bscProcessHelper.checkIfContract('NativeCoin');
+        coinData = await bscProcessHelper.checkIfContract('NativeCoin');
       } else if (txData.coin?.token_type?.toLowerCase() == TokenStandard.BEP20) {
-        coin_data = await bscProcessHelper.checkIfContract(txData.coin.token_address);
+        coinData = await bscProcessHelper.checkIfContract(txData.coin.token_address);
       }
-      console.log('coin_data >>', coin_data);
-      if (coin_data) {
+      console.log('coin_data >>', coinData);
+      if (coinData) {
         // let coin_data: any = await bscProcessHelper.CoinByCoinId(txData.coin_id);
         // const coin_data: any = await CoinsModel.findOne({ attributes: ['is_token', 'token_type', 'coin_symbol', 'coin_family', 'cmc_id', 'coin_symbol', 'added_by'], where: { coin_id: txData.coin_id } });
-        const trx_data = {
+        const trxData = {
           coin_id: txData?.coin.coin_id,
           status: txData?.status,
           txid: txData?.txid,
@@ -196,19 +184,19 @@ class UpdateInternalTrnxStatusProcess {
           fromAddress: txData?.fromAddress,
           coin: {
             coin_id: txData?.coin.coin_id,
-            is_token: coin_data.is_token,
-            token_type: coin_data.token_type,
-            coin_symbol: coin_data.coin_symbol,
-            coin_family: coin_data.coin_family,
-            cmc_id: coin_data.cmc_id,
-            token_address: Number(coin_data.is_token) === Number(BooleanEnum.true) ? coin_data.token_address : coin_data.coin_symbol,
-            added_by: coin_data.added_by
+            is_token: coinData.is_token,
+            token_type: coinData.token_type,
+            coin_symbol: coinData.coin_symbol,
+            coin_family: coinData.coin_family,
+            cmc_id: coinData.cmc_id,
+            token_address: Number(coinData.is_token) === Number(BooleanEnum.true) ? coinData.token_address : coinData.coin_symbol,
+            added_by: coinData.added_by
           }
         };
-        console.log(trx_data, "withdrwal");
-        await this.updateBroadcastTx(trx_data);
+        console.log(trxData, "withdrwal");
+        await this.updateBroadcastTx(trxData);
       } else {
-        console.log('coin does not exists', coin_data);
+        console.log('coin does not exists', coinData);
       }
 
 
@@ -306,7 +294,7 @@ class UpdateInternalTrnxStatusProcess {
                     toAddress, /// wallet_address,
                     trx_data?.coin /// coin
                   );
-                  await globalHelper.checkCoinInWallet(toAddress, trx_data?.coin, balance)
+                  await dbHelper.checkCoinInWallet(toAddress, trx_data?.coin, balance)
                 } else {
                   await walletHelper.updateAllActiveCoinBalance(toAddress, coinFamily);
                 }
