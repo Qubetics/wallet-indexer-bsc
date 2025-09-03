@@ -20,8 +20,8 @@ class BSCStartProcess {
     this.startDepositWithdrawConsumer();
     this.internalWithdrawalTxProcess();
     this.startInternalTxStatusUpdateConsumer();
-    // this.startUpdateBalanceConsumer();
-    // this.updateBalanceByWallet();
+    this.startUpdateBalanceConsumer();
+    this.updateBalanceByWallet();
     this.consumeTraceBlockBscTxsQueue();
   }
   private async connectKafka() {
