@@ -121,7 +121,7 @@ class BscProcessHelper {
         where: {
           coin_status: 1,
           coin_family: config.STATIC_COIN_FAMILY.BNB,
-          [Op.or]: [{ token_type: { [Op.ne]: config.TOKEN_TYPE721_BSC } }, { token_type: null }]
+          [Op.or]: [{ token_type: { [Op.ne]: TokenStandard.BEP721.toUpperCase() } }, { token_type: null }]
         },
         raw: true
       });
@@ -200,35 +200,20 @@ class BscProcessHelper {
   //     return null;
   //   }
   // };
+   
 
-  public fetchERC721Tokens = async () => {
-    try {
-      const getTokenQuery = `SELECT * FROM coins WHERE coin_status=1 AND coin_family=${config.STATIC_COIN_FAMILY.BNB} AND (token_type!='${config.TOKEN_TYPE_BSC}' OR token_type is null)`;
-
-      const tokens: CoinInterface[] = await database.db_read.query(getTokenQuery, {
-        type: Sequelize.QueryTypes.SELECT,
-      });
-
-      redisClient.set(config.TOKEN_TYPE721_BSC, JSON.stringify(tokens));
-    } catch (error: any) {
-      console.error('fetchERC721Tokens >>>>', error);
-    }
-  };
-
-  // public checkIfOurNFTContract = async (address: string) => {
+  //not used  in codebase  anywhere  so commented out
+  // public fetchERC721Tokens = async () => {
   //   try {
-  //     const getAsync = promisify(redisClient.get).bind(redisClient);
-  //     const value = await getAsync(config.TOKEN_TYPE721_BSC);
-  //     const erc721Tokens: CoinInterface[] = value ? JSON.parse(value) : [];
-  //     const token = erc721Tokens.find(
-  //       (el: any) => Number(el.is_token) === Number(BooleanEnum.true) && el.token_address.toUpperCase() === address?.toUpperCase()
-  //     );
+  //     const getTokenQuery = `SELECT * FROM coins WHERE coin_status=1 AND coin_family=${config.STATIC_COIN_FAMILY.BNB} AND (token_type!='${config.TOKEN_TYPE_BSC}' OR token_type is null)`;
 
-  //     if (token) return token;
-  //     return null;
+  //     const tokens: CoinInterface[] = await database.db_read.query(getTokenQuery, {
+  //       type: Sequelize.QueryTypes.SELECT,
+  //     });
+
+  //     redisClient.set(config.TOKEN_TYPE721_BSC, JSON.stringify(tokens));
   //   } catch (error: any) {
-  //     console.error('checkIfOurNFTContract >>>>>', error);
-  //     return null;
+  //     console.error('fetchERC721Tokens >>>>', error);
   //   }
   // };
 

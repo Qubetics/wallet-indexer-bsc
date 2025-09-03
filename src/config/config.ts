@@ -13,7 +13,6 @@ export const config = {
   REDIS_CONN: zookeeperConfig.config.REDIS_CONN,
   MIN_BLOCK_CONFORMATIONS: zookeeperConfig.config.MIN_BSC_BLOCK_CONFORMATIONS,
   TOKEN_TYPE_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_BSC}`,
-  TOKEN_TYPE721_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE721_BSC}`,
   STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
