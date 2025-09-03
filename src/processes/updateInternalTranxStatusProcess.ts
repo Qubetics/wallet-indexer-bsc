@@ -4,10 +4,10 @@ import { NotificationInterface, TrnxHistoryModel } from "../models";
 import { utilityHelper, walletHelper, blockchainHelper, dbHelper } from "../helpers";
 import bscProcessHelper from "./process.helper";
 import { Op } from "sequelize";
-import { globalHelper } from "../helpers/global.helper";
+// import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt, TransactionResponse } from "ethers";
-import { pendingTrnx, txData } from "../interfaces/global.interface";
+import { coinData, pendingTrnx, trnxStatusUpdate, updateBroadCastTrnx } from "../interfaces/global.interface";
 class UpdateInternalTrnxStatusProcess {
 
   public bsc_pending_withdrawal_tx_topic = config.KAFKA_TRANSACTIONS.BSC_PENDING_WITHDRAWAL_TX_TOPIC;
@@ -107,9 +107,9 @@ class UpdateInternalTrnxStatusProcess {
       // Initialize provider
       const provider = blockchainHelper.provider;
 
-      const transaction: TransactionResponse | null = await provider.getTransaction(data.tx_id);
+      const transaction: TransactionResponse | null = await provider.getTransaction(data.txId);
       if (transaction && transaction?.blockNumber) {
-        const transactionReceipt: TransactionReceipt | null = await provider.getTransactionReceipt(data.tx_id);
+        const transactionReceipt: TransactionReceipt | null = await provider.getTransactionReceipt(data.txId);
 
         let gasReverted: number | undefined;
         const gasUsed = transactionReceipt?.gasUsed || BigInt(0);
@@ -125,33 +125,33 @@ class UpdateInternalTrnxStatusProcess {
         }
 
         if (transactionReceipt?.status && transaction.blockHash != null) {
-          const txUpdate = {
+          const txUpdate: trnxStatusUpdate = {
             coin: {
-              coin_id: data.coin_id,
-              is_token: data.is_token,
-              token_type: data.token_type,
-              token_address: data.token_address,
+              coinId: data.coinId,
+              isToken: data.isToken,
+              tokenType: data.tokenType,
+              tokenAddress: data.tokenAddress,
             },
             status: "success",
-            txid: transaction.hash,
+            txId: transaction.hash,
             gasReverted: gasReverted !== undefined ? gasReverted : undefined,
             fromAddress: transactionReceipt.from.toLowerCase(),
-            tx_fee: gasInBsc
+            txFee: gasInBsc
           };
           await this.sendTxUpdate(txUpdate);
         } else if (transactionReceipt && transactionReceipt?.status === 0) {
-          const txUpdate = {
+          const txUpdate: trnxStatusUpdate = {
             coin: {
-              coin_id: data.coin_id,
-              is_token: data.is_token,
-              token_type: data.token_type,
-              token_address: data.token_address,
+              coinId: data.coinId,
+              isToken: data.isToken,
+              tokenType: data.tokenType,
+              tokenAddress: data.tokenAddress,
             },
             status: "failed",
-            txid: transaction.hash,
+            txId: transaction.hash,
             gasReverted: gasReverted !== undefined ? gasReverted : undefined,
             fromAddress: transactionReceipt.from.toLowerCase(),
-            tx_fee: gasInBsc
+            txFee: gasInBsc
           };
           await this.sendTxUpdate(txUpdate);
         }
@@ -161,36 +161,35 @@ class UpdateInternalTrnxStatusProcess {
     }
   };
 
-  private sendTxUpdate = async (txData: txData ) => {
+  private sendTxUpdate = async (txData: trnxStatusUpdate) => {
     try {
       console.log('txData.coin >>', txData.coin);
       let coinData: any = {};
-      if (!txData.coin?.is_token) {
+      if (!txData.coin?.isToken) {
         console.log('in case of coin');
         coinData = await bscProcessHelper.checkIfContract('NativeCoin');
-      } else if (txData.coin?.token_type?.toLowerCase() == TokenStandard.BEP20) {
-        coinData = await bscProcessHelper.checkIfContract(txData.coin.token_address);
+      } else if (txData.coin?.tokenType?.toLowerCase() == TokenStandard.BEP20) {
+        coinData = await bscProcessHelper.checkIfContract(txData.coin.tokenAddress);
       }
       console.log('coin_data >>', coinData);
       if (coinData) {
         // let coin_data: any = await bscProcessHelper.CoinByCoinId(txData.coin_id);
         // const coin_data: any = await CoinsModel.findOne({ attributes: ['is_token', 'token_type', 'coin_symbol', 'coin_family', 'cmc_id', 'coin_symbol', 'added_by'], where: { coin_id: txData.coin_id } });
-        const trxData = {
-          coin_id: txData?.coin.coin_id,
+        const trxData: updateBroadCastTrnx = {
           status: txData?.status,
-          txid: txData?.txid,
-          gas_reverted: txData?.gasReverted,
-          tx_fee: txData?.tx_fee,
+          txId: txData?.txId,
+          gasReverted: txData?.gasReverted,
+          txFee: txData?.txFee,
           fromAddress: txData?.fromAddress,
           coin: {
-            coin_id: txData?.coin.coin_id,
-            is_token: coinData.is_token,
-            token_type: coinData.token_type,
-            coin_symbol: coinData.coin_symbol,
-            coin_family: coinData.coin_family,
-            cmc_id: coinData.cmc_id,
-            token_address: Number(coinData.is_token) === Number(BooleanEnum.true) ? coinData.token_address : coinData.coin_symbol,
-            added_by: coinData.added_by
+            coinId: txData?.coin.coinId,
+            isToken: coinData.is_token,
+            tokenType: coinData.token_type,
+            coinSymbol: coinData.coin_symbol,
+            coinFamily: coinData.coin_family,
+            cmcId: coinData.cmc_id,
+            tokenAddress: Number(coinData.is_token) === Number(BooleanEnum.true) ? coinData.token_address : coinData.coin_symbol,
+            addedBy: coinData.added_by
           }
         };
         console.log(trxData, "withdrwal");
@@ -207,20 +206,31 @@ class UpdateInternalTrnxStatusProcess {
     }
   };
 
-  private updateBroadcastTx = async (trx_data: any) => {
-    const txnData: any = await TrnxHistoryModel.findOne({ attributes: ['from_adrs', 'amount', 'user_id', 'id', 'to_adrs', 'type', 'coin_family', 'fiat_type'], where: { tx_id: trx_data.txid, status: 'completed', [Op.or]: [{ blockchain_status: { [Op.is]: null as any } }, { blockchain_status: 'pending' }] }, raw: true });
+  private updateBroadcastTx = async (trxData: updateBroadCastTrnx) => {
+    const txnData: any = await TrnxHistoryModel.findOne({ attributes: ['from_adrs', 'amount', 'user_id', 'id', 'to_adrs', 'type', 'coin_family', 'fiat_type'], where: { tx_id: trxData.txId, status: 'completed', [Op.or]: [{ blockchain_status: { [Op.is]: null as any } }, { blockchain_status: 'pending' }] }, raw: true });
     if (txnData) {
       const fromAddress = txnData.from_adrs;
       const amount = txnData.amount;
       const userId = txnData.user_id;
       const txRowId = txnData.id;
-      const statusTx = trx_data.status == "success" ? BlockChainStatusEnum.CONFIRMED : BlockChainStatusEnum.FAILED;
+      const statusTx = trxData.status == "success" ? BlockChainStatusEnum.CONFIRMED : BlockChainStatusEnum.FAILED;
       const toAddress = txnData.to_adrs;
       const txType = txnData?.type
-      const coinSymbol = trx_data?.coin?.coin_symbol
+      const coinSymbol = trxData?.coin?.coinSymbol
       const coinFamily = txnData.coin_family;
       //Update transaction status
-      const txUpdateRes = await TrnxHistoryModel.update({ blockchain_status: statusTx, tx_fee: trx_data.tx_fee, gas_reverted: trx_data.gas_reverted }, { where: { id: txRowId } })
+      const txUpdateRes = await TrnxHistoryModel.update({ blockchain_status: statusTx, tx_fee: trxData.txFee, gas_reverted: trxData.gasReverted }, { where: { id: txRowId } });
+
+      const coinData: coinData = {
+        coin_id: trxData.coin.coinId,
+        is_token: trxData.coin.isToken,
+        token_type: trxData.coin.tokenType,
+        coin_symbol: trxData.coin.coinSymbol,
+        coin_family: trxData.coin.coinFamily,
+        cmc_id: trxData.coin.cmcId,
+        token_address: trxData.coin.isToken === true ? trxData.coin.tokenAddress : trxData.coin.coinSymbol,
+        added_by: trxData.coin.addedBy
+      }
       if (txUpdateRes) {
         if (statusTx == BlockChainStatusEnum.CONFIRMED) {
           console.log('tx_type >>', txType)
@@ -235,10 +245,10 @@ class UpdateInternalTrnxStatusProcess {
               if (txType !== TrnxTypeEnum.DAPP) {
                 const native_coin: any = await bscProcessHelper.checkIfContract('NativeCoin');
                 await walletHelper.updateBalance(fromAddress, native_coin);
-                console.log("trx_data.coin?.token_type>>>>", trx_data)
-                if (trx_data?.coin?.is_token === BooleanEnum.true && trx_data.coin?.token_type.toLowerCase() === TokenStandard.BEP20.toLowerCase()) {
+                console.log("trx_data.coin?.token_type>>>>", trxData)
+                if (trxData?.coin?.isToken === true && trxData.coin?.tokenType?.toLowerCase() === TokenStandard.BEP20.toLowerCase()) {
                   /** Update User ERC20 Token Balance */
-                  await walletHelper.updateBalance(fromAddress, trx_data?.coin);
+                  await walletHelper.updateBalance(fromAddress, coinData);
                 }
               } else { // Entered in DAPP transactioin
                 await walletHelper.updateAllActiveCoinBalance(fromAddress, coinFamily);
@@ -274,8 +284,8 @@ class UpdateInternalTrnxStatusProcess {
                 coin_symbol: coinSymbol,
                 wallet_address: fromAddress,
                 tx_id: txRowId,
-                coin_id: trx_data?.coin?.coin_id,
-                coin_family: trx_data?.coin?.coin_family,
+                coin_id: trxData?.coin?.coinId,
+                coin_family: trxData?.coin?.coinFamily,
                 tx_type: txType,
                 notification_type: trnxTypeW,
                 state: "confirmed"
@@ -292,16 +302,16 @@ class UpdateInternalTrnxStatusProcess {
                 if (txType !== TrnxTypeEnum.DAPP) {
                   const balance: any = await walletHelper.updateBalance(
                     toAddress, /// wallet_address,
-                    trx_data?.coin /// coin
+                    coinData/// coin
                   );
-                  await dbHelper.checkCoinInWallet(toAddress, trx_data?.coin, balance)
+                  await dbHelper.checkCoinInWallet(toAddress, coinData, balance)
                 } else {
                   await walletHelper.updateAllActiveCoinBalance(toAddress, coinFamily);
                 }
               }
               const notiMsg = `${trnxTypeD} of ${await utilityHelper.bigNumberSafeConversion(
                 amount
-              )} ${trx_data?.coin?.coin_symbol.toUpperCase()} has been confirmed.`;
+              )} ${trxData?.coin?.coinSymbol.toUpperCase()} has been confirmed.`;
 
               const notifData: NotificationInterface = {
                 title: NotificationTypeEnum.DEPOSIT.toUpperCase(),
@@ -312,8 +322,8 @@ class UpdateInternalTrnxStatusProcess {
                 wallet_address: toAddress,
                 tx_id: txRowId,
                 coin_symbol: coinSymbol,
-                coin_id: trx_data?.coin?.coin_id,
-                coin_family: trx_data?.coin?.coin_family,
+                coin_id: trxData?.coin?.coinId,
+                coin_family: trxData?.coin?.coinFamily,
                 tx_type: txType,
                 notification_type: trnxTypeD,
                 state: "confirmed"
@@ -341,7 +351,7 @@ class UpdateInternalTrnxStatusProcess {
             default:
               break;
           }
-          const notiMsg = trx_data?.coin.token_type === "ERC721" ? `Withdraw of NFT(${trx_data?.coin.coin_symbol.toUpperCase()}) with token id ${amount} has been confirmed.` : `${trnxTypeW} of ${await utilityHelper.bigNumberSafeConversion(amount)} ${trx_data?.coin.coin_symbol.toUpperCase()} has been failed.`;
+          const notiMsg = trxData?.coin.tokenType === "ERC721" ? `Withdraw of NFT(${trxData?.coin.coinSymbol.toUpperCase()}) with token id ${amount} has been confirmed.` : `${trnxTypeW} of ${await utilityHelper.bigNumberSafeConversion(amount)} ${trxData?.coin.coinSymbol.toUpperCase()} has been failed.`;
           const notifData: NotificationInterface = {
             title: trnxTypeW.toUpperCase(),
             message: notiMsg,
@@ -351,8 +361,8 @@ class UpdateInternalTrnxStatusProcess {
             wallet_address: fromAddress,
             tx_id: txRowId,
             coin_symbol: coinSymbol,
-            coin_id: trx_data?.coin?.coin_id,
-            coin_family: trx_data?.coin?.coin_family,
+            coin_id: trxData?.coin?.coinId,
+            coin_family: trxData?.coin?.coinFamily,
             tx_type: txType,
             notification_type: trnxTypeW,
             state: "failed"

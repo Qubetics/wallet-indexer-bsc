@@ -23,6 +23,7 @@ import {
 } from "../models/index";
 import bscProcessHelper from "../processes/process.helper";
 import { config } from "../config/config";
+import { coinData } from "../interfaces/global.interface";
 
 // import { utilityHelper } from "./utility.helper";
 
@@ -106,7 +107,7 @@ class DbHelper {
 
     public async checkCoinInWallet(
         walletAddress: string,
-        coin: CoinInterface,
+        coin: coinData,
         balance: any
     ): Promise<void | Error> {
         try {

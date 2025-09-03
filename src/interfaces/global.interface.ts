@@ -21,23 +21,66 @@ export interface blocksTrnx {
 }
 
 export interface pendingTrnx {
-    tx_id: string;
+    txId: string;
+    coinId: number,
+    isToken: boolean,
+    tokenType: string | null,
+    tokenAddress: string
+}
+
+// export interface txData {
+//     coin: {
+//         coin_id: number,
+//         is_token: boolean,
+//         token_type: string | null,
+//         token_address: string
+//     };
+//     status: string;
+//     txid: string;
+//     gasReverted: number | undefined;
+//     fromAddress: string;
+//     tx_fee: number
+// }
+
+export interface coinData {
     coin_id: number,
     is_token: boolean,
     token_type: string | null,
-    token_address: string
+    coin_symbol: string,
+    coin_family: number,
+    cmc_id: number,
+    token_address: string,
+    added_by: string
 }
 
-export interface txData {
+export interface trnxStatusUpdate {
     coin: {
-      coin_id: number,
-      is_token: boolean,
-      token_type: string | null,
-      token_address: string
+        coinId: number,
+        isToken: boolean,
+        tokenType: string | null,
+        tokenAddress: string
     };
     status: string;
-    txid: string;
+    txId: string;
     gasReverted: number | undefined;
     fromAddress: string;
-    tx_fee: number
-  }
+    txFee: number
+}
+
+export interface updateBroadCastTrnx {
+    status: string,
+    txId: string,
+    gasReverted: number | undefined,
+    txFee: number,
+    fromAddress: string,
+    coin: {
+        coinId: number,
+        isToken: boolean,
+        tokenType: string | null,
+        coinSymbol: string,
+        coinFamily: number,
+        cmcId: number,
+        tokenAddress: string,
+        addedBy: string
+    }
+}

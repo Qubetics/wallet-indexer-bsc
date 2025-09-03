@@ -27,11 +27,11 @@ class ReadInternalTxProcess {
     if (tx.length > 0) {
       await Promise.all(tx.map(async (el: any) => {
         const trnx: pendingTrnx = {
-          tx_id: el.tx_id,
-          coin_id: el.coin_id,
-          is_token: el.coin_data.is_token,
-          token_type: el.coin_data.token_type,
-          token_address: el.coin_data.token_address,
+          txId: el.tx_id,
+          coinId: el.coin_id,
+          isToken: el.coin_data.is_token,
+          tokenType: el.coin_data.token_type,
+          tokenAddress: el.coin_data.token_address,
         };
         return this.addTxToQueue(trnx); // Directly return the promise
       }));
@@ -43,7 +43,7 @@ class ReadInternalTxProcess {
     // }
   };
 
-  private addTxToQueue = async (data: { tx_id: string; coin_id: number }) => {
+  private addTxToQueue = async (data: pendingTrnx) => {
     await kafkaHelper.produceMessage(this.bsc_pending_withdrawal_tx_topic, data);
   };
 }

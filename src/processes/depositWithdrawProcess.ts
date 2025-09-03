@@ -2,12 +2,13 @@ import { TxType, WebHookTxType } from "../types/ERC20Tokens.types";
 import { CoinInterface, NotificationInterface, TrnxHistoryModel } from "../models";
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
-import { BlockChainStatusEnum, NotificationTypeEnum, TrnxTypeEnum, TxReqTypesEnum } from "../enum";
+import { BlockChainStatusEnum, BooleanEnum, NotificationTypeEnum, TrnxTypeEnum, TxReqTypesEnum } from "../enum";
 import { dbHelper, utilityHelper, walletHelper } from "../helpers"
 import { Op } from "sequelize";
 // import { globalHelper } from "../helpers/global.helper";
 import WalletModel from "../models/tables/model.wallets";
 import kafkaHelper from "../config/kafka.helper";
+import { coinData } from "../interfaces/global.interface";
 
 
 class DepositWithdrawProcess {
@@ -95,28 +96,37 @@ class DepositWithdrawProcess {
       console.log("amount === 0")
     } else {
       console.log("amount is more than 0", data)
-      let coin_data: any = null;
+      let coinData: any = null;
       if (data.token) {
         console.log("token trnx")
-        coin_data = data.token;
+        coinData = data.token;
       } else if (data.isNFTToken) {
-        coin_data = data.isNFTToken;
+        coinData = data.isNFTToken;
       } else {
         console.log("coin trnx")
-        coin_data = await bscProcessHelper.checkIfContract('NativeCoin');
+        coinData = await bscProcessHelper.checkIfContract('NativeCoin');
       }
       const webhookTx: WebHookTxType = {
-        coin: coin_data,
-        tx_id: data.txId,
-        to_address: data.toAddress,
-        from_address: data.fromAddress,
-        block_id: data.blockId,
+        coin: {
+          coinId: coinData.coin_id,
+          isToken: coinData.is_token,
+          tokenType: coinData.token_type,
+          coinSymbol: coinData.coin_symbol,
+          coinFamily: coinData.coin_family,
+          cmcId: coinData.cmc_id,
+          tokenAddress: Number(coinData.is_token) === Number(BooleanEnum.true) ? coinData.token_address : coinData.coin_symbol,
+          addedBy: coinData.added_by
+        },
+        txId: data.txId,
+        toAddress: data.toAddress,
+        fromAddress: data.fromAddress,
+        blockId: data.blockId,
         amount: data.amount,
         isNFTToken: data.isNFTToken || false,
         status: 'completed',
-        blockchain_status: BlockChainStatusEnum.CONFIRMED,
+        blockchainStatus: BlockChainStatusEnum.CONFIRMED,
         txType: data.txType,
-        trnx_fee: data.trnx_fee
+        trnxFee: data.trnx_fee
       };
       console.log(webhookTx, "DEPOSIT");
       await this.saveNewTrnx(webhookTx);
@@ -125,40 +135,52 @@ class DepositWithdrawProcess {
   };
 
   private saveNewTrnx = async (
-    trnx_data: WebHookTxType
+    trnxData: WebHookTxType
   ) => {
     try {
-      const tx_hash: string = trnx_data.tx_id;
-      const to_address: string = trnx_data.to_address;
-      const from_address: string = trnx_data.from_address;
-      const coin: CoinInterface = trnx_data.coin;
-      const amount: number = trnx_data.amount;
-      const status: string = trnx_data.status;
-      let block_number: number;
-      if (typeof trnx_data?.block_id === "string" && trnx_data?.block_id?.startsWith("0x")) {
-        // convert hex string → decimal
-        block_number = parseInt(trnx_data.block_id, 16);
-      } else {
-        // already a number or decimal string
-        block_number = Number(trnx_data?.block_id);
+      const txHash: string = trnxData.txId;
+      const toAddress: string = trnxData.toAddress;
+      const fromAddress: string = trnxData.fromAddress;
+      // const coin: CoinInterface = trnx_data.coin;
+      const amount: number = trnxData.amount;
+      const status: string = trnxData.status;
+
+      const coinData: coinData = {
+        coin_id: trnxData.coin.coinId,
+        is_token: trnxData.coin.isToken,
+        token_type: trnxData.coin.tokenType,
+        coin_symbol: trnxData.coin.coinSymbol,
+        coin_family: trnxData.coin.coinFamily,
+        cmc_id: trnxData.coin.cmcId,
+        token_address: trnxData.coin.isToken === true ? trnxData.coin.tokenAddress : trnxData.coin.coinSymbol,
+        added_by: trnxData.coin.addedBy
       }
 
-      const blockchain_status: BlockChainStatusEnum = trnx_data.blockchain_status;
-      const trnx_fee: any = trnx_data.trnx_fee ? trnx_data.trnx_fee : 0;
-      let tx_type: TrnxTypeEnum = trnx_data.txType ? trnx_data.txType : TrnxTypeEnum.DEPOSIT;
+      let blockNumber: number;
+      if (typeof trnxData?.blockId === "string" && trnxData?.blockId?.startsWith("0x")) {
+        // convert hex string → decimal
+        blockNumber = parseInt(trnxData.blockId, 16);
+      } else {
+        // already a number or decimal string
+        blockNumber = Number(trnxData?.blockId);
+      }
+
+      const blockchain_status: BlockChainStatusEnum = trnxData.blockchainStatus;
+      const trnx_fee: any = trnxData.trnxFee ? trnxData.trnxFee : 0;
+      let txType: TrnxTypeEnum = trnxData.txType ? trnxData.txType : TrnxTypeEnum.DEPOSIT;
       const fiat_currency = "USD";
       let checkOldTrnx: any = null;
-      if (tx_type == TrnxTypeEnum.WITHDRAW) {
+      if (txType == TrnxTypeEnum.WITHDRAW) {
         checkOldTrnx = await TrnxHistoryModel.findOne({
           attributes: ["coin_id", "tx_id", "type"],
           where: {
             tx_id: {
-              [Op.like]: tx_hash,
+              [Op.like]: txHash,
             },
             from_adrs: {
-              [Op.like]: from_address,
+              [Op.like]: fromAddress,
             },
-            coin_id: coin.coin_id,
+            coin_id: coinData.coin_id,
             req_type: { [Op.notIn]: [TxReqTypesEnum.ALCHEMY, TxReqTypesEnum.TRANSAK] }
           },
           raw: true,
@@ -167,8 +189,8 @@ class DepositWithdrawProcess {
           const checkCoinInWallet: any = await WalletModel.findOne({
             attributes: ["coin_id", "coin_family"],
             where: {
-              wallet_address: from_address,
-              coin_id: coin.coin_id
+              wallet_address: fromAddress,
+              coin_id: coinData.coin_id
             },
             raw: true
           })
@@ -177,17 +199,17 @@ class DepositWithdrawProcess {
             return false;
           }
         }
-      } else if (tx_type == TrnxTypeEnum.DEPOSIT) {
+      } else if (txType == TrnxTypeEnum.DEPOSIT) {
         checkOldTrnx = await TrnxHistoryModel.findOne({
           attributes: ["coin_id", "tx_id", "type"],
           where: {
             tx_id: {
-              [Op.like]: tx_hash,
+              [Op.like]: txHash,
             },
             to_adrs: {
-              [Op.like]: to_address,
+              [Op.like]: toAddress,
             },
-            coin_id: coin.coin_id,
+            coin_id: coinData.coin_id,
             req_type: { [Op.notIn]: [TxReqTypesEnum.ALCHEMY, TxReqTypesEnum.TRANSAK] }
           },
           raw: true,
@@ -196,15 +218,15 @@ class DepositWithdrawProcess {
       }
 
       if (checkOldTrnx) {
-        console.error(`Transaction ${tx_hash} is already exists.`);
+        console.error(`Transaction ${txHash} is already exists.`);
         return false;
       }
 
-      if (tx_type !== TrnxTypeEnum.WITHDRAW && checkOldTrnx && checkOldTrnx.tx_id == tx_hash) {
-        tx_type = checkOldTrnx.type;
+      if (txType !== TrnxTypeEnum.WITHDRAW && checkOldTrnx && checkOldTrnx.tx_id == txHash) {
+        txType = checkOldTrnx.type;
       }
 
-      const addresses = [from_address, to_address].filter(Boolean);
+      const addresses = [fromAddress, toAddress].filter(Boolean);
       const results = await bscProcessHelper.getMultipleKeyValuePairs(`${config.BSC_WALLET_ADDRESS}`, addresses);
       // console.log('results 2222222222 >>>>', results);
       if (results) {
@@ -222,16 +244,16 @@ class DepositWithdrawProcess {
           user_id: userId,
           to_user_id: toUserId,
           req_type: TxReqTypesEnum.EXNG,
-          from_adrs: from_address,
-          to_adrs: to_address,
-          coin_id: coin.coin_id,
-          coin_family: coin.coin_family,
+          from_adrs: fromAddress,
+          to_adrs: toAddress,
+          coin_id: coinData.coin_id,
+          coin_family: coinData.coin_family,
           amount: amount,
           status: status,
-          block_id: block_number,
-          tx_id: tx_hash,
+          block_id: blockNumber,
+          tx_id: txHash,
           blockchain_status: blockchain_status,
-          type: tx_type,
+          type: txType,
           tx_fee: trnx_fee,
           fiat_type: fiat_currency
         }
@@ -241,13 +263,13 @@ class DepositWithdrawProcess {
           const trnxTypeD: string = "Deposit";
           /** update to adrs wallet balance */
           const balance: any = await walletHelper.updateBalance(
-            to_address, /// wallet_address,
-            coin /// coin
+            toAddress, /// wallet_address,
+            coinData /// coin
           );
-          await dbHelper.checkCoinInWallet(to_address, coin, balance)
+          await dbHelper.checkCoinInWallet(toAddress, coinData, balance)
           const notiMsg = `${trnxTypeD} of ${await utilityHelper.bigNumberSafeConversion(
             amount
-          )} ${coin?.coin_symbol?.toUpperCase()} has been confirmed.`;
+          )} ${coinData?.coin_symbol?.toUpperCase()} has been confirmed.`;
 
           const notifData: NotificationInterface = {
             title: NotificationTypeEnum.DEPOSIT?.toUpperCase(),
@@ -255,12 +277,12 @@ class DepositWithdrawProcess {
             amount: amount,
             from_user_id: userId,
             to_user_id: toUserId,
-            wallet_address: to_address,
+            wallet_address: toAddress,
             tx_id: newTrnx.id,
-            coin_symbol: coin.coin_symbol,
-            coin_id: coin.coin_id,
+            coin_symbol: coinData.coin_symbol,
+            coin_id: coinData.coin_id,
             coin_family: trx_data?.coin_family,
-            tx_type: tx_type,
+            tx_type: txType,
             notification_type: trnxTypeD,
             // state: "confirmed"
           };
@@ -270,7 +292,7 @@ class DepositWithdrawProcess {
         if (addressWithdraw) {
           let trnxTypeW: string = "Withdraw";
 
-          switch (tx_type) {
+          switch (txType) {
             case TrnxTypeEnum.SMARTCONTRACTINTERACTION:
               trnxTypeW = "Smart Contract Interaction";
               break;
@@ -288,14 +310,14 @@ class DepositWithdrawProcess {
           }
 
           await walletHelper.updateBalance(
-            from_address, /// wallet_address,
-            coin /// coin
+            fromAddress, /// wallet_address,
+            coinData /// coin
           );
-          if (coin.is_token) {
+          if (coinData.is_token) {
             const native_coin: any =
               await bscProcessHelper.checkIfContract('NativeCoin');
             await walletHelper.updateBalance(
-              from_address, /// wallet_address,
+              fromAddress, /// wallet_address,
               native_coin /// coin
             );
           }
@@ -303,7 +325,7 @@ class DepositWithdrawProcess {
 
           const notiMsg = `${trnxTypeW} of ${await utilityHelper.bigNumberSafeConversion(
             amount
-          )} ${coin.coin_symbol?.toUpperCase()} has been confirmed.`;
+          )} ${coinData.coin_symbol?.toUpperCase()} has been confirmed.`;
 
           const notifData: NotificationInterface = {
             title: trnxTypeW?.toUpperCase(),
@@ -311,11 +333,11 @@ class DepositWithdrawProcess {
             message: notiMsg,
             from_user_id: 0,
             to_user_id: userId,
-            wallet_address: from_address,
+            wallet_address: fromAddress,
             tx_id: newTrnx.id,
-            tx_type: tx_type,
-            coin_symbol: coin.coin_symbol,
-            coin_id: coin.coin_id,
+            tx_type: txType,
+            coin_symbol: coinData.coin_symbol,
+            coin_id: coinData.coin_id,
             coin_family: trx_data?.coin_family,
             notification_type: trnxTypeW,
             // state: "confirmed"
