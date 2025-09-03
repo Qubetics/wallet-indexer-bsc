@@ -122,7 +122,7 @@
 //             }
 //         } catch (error: any) {
 //             console.error("buildTx error >>>", (error as Error).message);
-//             await global_helper.save_error_logs('Bsc_buildTx', error.message)
+//             await global_helper.saveErrorLogs('Bsc_buildTx', error.message)
 //         }
 //     };
 //     private check_bsc_deposit = async (data: blocks_trnx, txReceipt: TransactionReceipt) => {
@@ -157,7 +157,7 @@
 //             }
 //         } catch (error: any) {
 //             console.error("💥 ~ ~ check_bsc_deposit error", (error as Error).message);
-//             await global_helper.save_error_logs('BSC_check_deposit', error.message)
+//             await global_helper.saveErrorLogs('BSC_check_deposit', error.message)
 
 //         }
 //     }
@@ -193,7 +193,7 @@
 //             await kafkaHelper.produceMessage(queueName, data);
 //         } catch (err: any) {
 //             console.error("addTxToQueue", (err as Error).message);
-//             await global_helper.save_error_logs('ETH_checkAddressInDB', err.message)
+//             await global_helper.saveErrorLogs('ETH_checkAddressInDB', err.message)
 
 //         }
 //     };

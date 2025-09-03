@@ -1,8 +1,8 @@
-import { blockchainHelper } from "../helpers/index";
+import { blockchainHelper, dbHelper } from "../helpers/index";
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
 import { BscOldBLockModel } from "../models";
-import { globalHelper } from "../helpers/global.helper";
+// import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
 import { ethers, TransactionReceipt } from "ethers";
 import { blocksTrnx } from "../interfaces/global.interface";
@@ -301,7 +301,7 @@ class ReadBlockTrnxProcess {
     //             } else {
     //                 let block_diff: number = newBlock - oldBlock;
     //                 if (block_diff > 50) {
-    //                     await bscProcessHelper.diff_blocks_add_in_db(newBlock, oldBlock)
+    //                     await bscProcessHelper.diffBlocksAddInDb(newBlock, oldBlock)
     //                     await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.OLD_BLOCK_BSC, newBlock.toString())
     //                     await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.NEW_BLOCK_BSC, this.minBlockConfirmation, newBlock)
     //                 } else {
@@ -310,11 +310,11 @@ class ReadBlockTrnxProcess {
     //             }
     //         } else {
     //             console.log(" no old block and no new block")
-    //             await global_helper.save_error_logs('Bsc_setBlocks', 'No old block no new block')
+    //             await global_helper.saveErrorLogs('Bsc_setBlocks', 'No old block no new block')
     //         }
     //     } catch (err: any) {
     //         console.error("Error in getBlocks", err)
-    //         await global_helper.save_error_logs('bsc_getBlocks', err.message)
+    //         await global_helper.saveErrorLogs('bsc_getBlocks', err.message)
     //     }
     // }
     // public async readBlocks(blockNumber: number, toBlockNumber: number) {
@@ -330,7 +330,7 @@ class ReadBlockTrnxProcess {
     //         this.getTxFromBlock(blockNumber, KEYS.latestBlock);
     //     } catch (err: any) {
     //         console.error("Error in readBlocks>>.", (err as Error).message)
-    //         await global_helper.save_error_logs('BSC_readBlocks', err.message)
+    //         await global_helper.saveErrorLogs('BSC_readBlocks', err.message)
     //     }
     // }
 
@@ -374,7 +374,7 @@ class ReadBlockTrnxProcess {
     //         await Promise.allSettled(transactionPromises);
     //     } catch (err: any) {
     //         console.error("Error in getTxFromBlock:", (err as Error).message);
-    //         await global_helper.save_error_logs('bsc_getTxFromBlock', err.message)
+    //         await global_helper.saveErrorLogs('bsc_getTxFromBlock', err.message)
     //     }
     // }
 
@@ -413,7 +413,7 @@ class ReadBlockTrnxProcess {
     //         }
     //     } catch (err: any) {
     //         console.error("Error in readBehindBlock>>", err)
-    //         await global_helper.save_error_logs('BSC_readBehindBlock', err.message)
+    //         await global_helper.saveErrorLogs('BSC_readBehindBlock', err.message)
     //     }
     // }
 
@@ -649,7 +649,7 @@ class ReadBlockTrnxProcess {
             await Promise.allSettled(transactionPromises);
         } catch (err: any) {
             console.error("Error in getTxFromBlock:", (err as Error).message);
-            await globalHelper.save_error_logs('Eth_readBehindBlock', err.message)
+            await dbHelper.saveErrorLogs('Eth_readBehindBlock', err.message)
         }
     }
 
@@ -880,7 +880,7 @@ class ReadBlockTrnxProcess {
             }
         } catch (error: any) {
             console.error("💥 ~ ~ check_eth_deposit error", (error as Error).message);
-            await globalHelper.save_error_logs('ETH_check_deposit', error.message)
+            await dbHelper.saveErrorLogs('ETH_check_deposit', error.message)
 
         }
     }
@@ -918,7 +918,7 @@ class ReadBlockTrnxProcess {
             await kafkaHelper.produceMessage(queueName, data)
         } catch (err: any) {
             console.error("addTxToQueue", (err as Error).message);
-            await globalHelper.save_error_logs('ETH_checkAddressInDB', err.message)
+            await dbHelper.saveErrorLogs('ETH_checkAddressInDB', err.message)
 
         }
     };
@@ -928,7 +928,7 @@ class ReadBlockTrnxProcess {
             await kafkaHelper.produceMessage(queueName, data)
         } catch (err: any) {
             console.error("addTxToQueue", (err as Error).message);
-            await globalHelper.save_error_logs('ETH_checkAddressInDB', err.message)
+            await dbHelper.saveErrorLogs('ETH_checkAddressInDB', err.message)
 
         }
     };

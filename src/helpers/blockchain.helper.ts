@@ -4,9 +4,6 @@ import { config } from '../config';
 import { ethers } from 'ethers';
 import { TokenData } from "../interfaces/ether.interface";
 
-
-
-
 class BlockchainHelper {
     public provider: ethers.JsonRpcProvider;
 

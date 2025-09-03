@@ -1,8 +1,9 @@
 import { config } from "../config/config";
 import bscProcessHelper from "./process.helper";
 import { BscOldBLockModel } from "../models";
-import { globalHelper } from "../helpers/global.helper";
+// import { globalHelper } from "../helpers/global.helper";
 import kafkaHelper from "../config/kafka.helper";
+import { dbHelper } from "../helpers";
 
 class ReadBlockProcess {
     public minBlockConfirmation: number;
@@ -39,7 +40,7 @@ class ReadBlockProcess {
                 } else {
                     const blockDiff: number = newBlock - oldBlock;
                     if (blockDiff > 50) {
-                        await bscProcessHelper.diff_blocks_add_in_db(newBlock, oldBlock)
+                        await bscProcessHelper.diffBlocksAddInDb(newBlock, oldBlock)
                         await bscProcessHelper.setKeyValuePair(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.START_BLOCK, newBlock.toString())
                         await bscProcessHelper.setBlocks(config.REDISKEYS.BSC_BLOCKS, config.REDISKEYS.END_BLOCK, this.minBlockConfirmation, newBlock)
                     } else {
@@ -63,11 +64,11 @@ class ReadBlockProcess {
                 }
             } else {
                 console.log(" no old block and no new block")
-                await globalHelper.save_error_logs('Bsc_setBlocks', 'No old block no new block')
+                await dbHelper.saveErrorLogs('Bsc_setBlocks', 'No old block no new block')
             }
         } catch (err: any) {
             console.error("Error in getBlocks", err)
-            await globalHelper.save_error_logs('bsc_getBlocks', err.message)
+            await dbHelper.saveErrorLogs('bsc_getBlocks', err.message)
         }
     }
 
@@ -109,7 +110,7 @@ class ReadBlockProcess {
             }
         } catch (err: any) {
             console.error("Error in readBehindBlock>>", err)
-            await globalHelper.save_error_logs('BSC_readBehindBlock', err.message)
+            await dbHelper.saveErrorLogs('BSC_readBehindBlock', err.message)
         }
     }
 

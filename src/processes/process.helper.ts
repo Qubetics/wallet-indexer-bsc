@@ -6,7 +6,7 @@ import { promisify } from "util";
 import { config } from "../config/config";
 import { TokenStandard } from "../enum";
 import { globalHelper } from "../helpers/global.helper";
-import { blockchainHelper } from "../helpers";
+import { blockchainHelper, dbHelper } from "../helpers";
 import { Op } from "sequelize";
 import kafkaHelper from "../config/kafka.helper";
 
@@ -63,7 +63,7 @@ class BscProcessHelper {
       }
     } catch (err: any) {
       console.error("Error in  getBlocks", err)
-      await globalHelper.save_error_logs('BSC_setBlocks', err.message)
+      await dbHelper.saveErrorLogs('BSC_setBlocks', err.message)
     }
   }
 
@@ -75,7 +75,7 @@ class BscProcessHelper {
     }
   }
 
-  public async diff_blocks_add_in_db(current_block: number, old_block: number) {
+  public async diffBlocksAddInDb(current_block: number, old_block: number) {
     try {
 
       const dataToInsert = { block_number: old_block, coin_family: config.STATIC_COIN_FAMILY.BNB, start_block: old_block, end_block: current_block, status: 0 }
@@ -84,7 +84,7 @@ class BscProcessHelper {
       return true;
     } catch (err: any) {
       console.error("💥 ~ Error in diff_blocks_add_in_redis.", err)
-      await globalHelper.save_error_logs('BSC_diff_blocks_add_in_db', err.message)
+      await dbHelper.saveErrorLogs('diffBlocksAddInDb', err.message)
       return false;
     }
   }
@@ -141,7 +141,7 @@ class BscProcessHelper {
       // redisClient.set(config.TOKEN_TYPE_BSC || "", JSON.stringify(tokens));
     } catch (err: any) {
       console.error('fetchERC20Tokens >>>>>', err);
-      await globalHelper.save_error_logs('BSC_fetchERC20Tokens', err.message)
+      await dbHelper.saveErrorLogs('BSC_fetchERC20Tokens', err.message)
     }
   }
 
@@ -179,7 +179,7 @@ class BscProcessHelper {
       // }
       return JSON.parse(token_data);
     } catch (err: any) {
-      console.error('check_our_wallet_address >>>>>', err);
+      console.error('checkIfContract >>>>>', err);
       return null;
     }
   };
@@ -232,15 +232,15 @@ class BscProcessHelper {
   //   }
   // };
 
-  public check_our_wallet_address = async (address: string) => {
+  public checkOurWalletAddress = async (address: string) => {
     try {
       const walletData: any = await this.getKeyValuePair(config.BSC_WALLET_ADDRESS, address);
-      if (walletData) {
-        console.log("walletData>>>>>>>>", walletData)
-      }
-      return JSON.parse(walletData);
+      // if (walletData) {
+      //   console.log("walletData>>>>>>>>", walletData)
+      // }
+      return walletData ? JSON.parse(walletData) : null;
     } catch (err: any) {
-      console.error('check_our_wallet_address >>>>>', err);
+      console.error('checkOurWalletAddress >>>>>', err);
       return null;
     }
   };
@@ -333,7 +333,7 @@ class BscProcessHelper {
         graph_source: null,
         is_on_trading_view: 1,
       };
-      const response: any = await globalHelper.coinCreate(coinData);
+      const response: any = await dbHelper.coinCreate(coinData);
       console.log("🚀 ~ processHelper ~ response:", response)
 
       coinData.coin_id = response.coin_id;
@@ -352,14 +352,14 @@ class BscProcessHelper {
       //update  token in redis hash 
       await globalHelper.updateTokenInRedisHash(redisCoinData);
       //insert token in custom token table 
-      await globalHelper.customTokenCreate({
+      await dbHelper.customTokenCreate({
         coin_id: coinData.coin_id,
         user_id: userId,
       });
       return redisCoinData;
     } catch (err: any) {
       console.error("Error in add_coin_to_table>>", err);
-      await globalHelper.save_error_logs("add_coin_to_table", err.message);
+      await dbHelper.saveErrorLogs("add_coin_to_table", err.message);
       return null;
     }
   }

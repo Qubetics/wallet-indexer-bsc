@@ -17,8 +17,8 @@ export const config = {
   STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
-    OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
-    NEW_BLOCK_BSC: zookeeperConfig.config.NEW_BLOCK_BSC,
+    // OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
+    // NEW_BLOCK_BSC: zookeeperConfig.config.NEW_BLOCK_BSC,
     START_BLOCK: 'start_block',
     END_BLOCK: 'end_block',
     ALL_PROCESSES: zookeeperConfig.config.ALL_PROCESSES,

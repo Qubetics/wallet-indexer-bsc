@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from "sequelize";
-import { CustomTokenInterface } from "../interfaces/interface.custom_tokens";
+import { CustomTokenInterface } from "../interfaces/interface.customTokens";
 import db from "../../config/db";
 
 interface CustomTokenCreationModel extends Optional<CustomTokenInterface, "id"> { }
@@ -31,6 +31,6 @@ const dataObj = {
 };
 
 
-const CustomTokennModel = db.db_write.define<CustomTokenInstance>("custom_token", dataObj);
+const CustomTokennModel = db.db_write.define<CustomTokenInstance>("custom_tokens", dataObj);
 
 export default CustomTokennModel;

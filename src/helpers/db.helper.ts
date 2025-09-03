@@ -1,103 +1,255 @@
 import { Op } from "sequelize";
 import {
     BooleanEnum,
-    CoinFamilyEnum,
-    TokenStandard,
+    // CoinFamilyEnum,
+    // TokenStandard,
 } from "../enum";
 
 import {
-    // CatchErrorMsgsModel,
+    CatchErrorMsgsModel,
     CoinInterface,
-    // CoinPriceInFiatModel,
     CoinsModel,
+    CustomTokennModel,
+    // CatchErrorMsgsModel,
+    // CoinInterface,
+    // CoinPriceInFiatModel,
+    // CoinsModel,
     DeviceTokenModel,
+    WalletModel,
     // ReferralModel,
     // RewardHistoryModel,
     // SettingsModel,
-    WalletModel
+    // WalletModel
 } from "../models/index";
-import { utilityHelper } from "./utility.helper";
+import bscProcessHelper from "../processes/process.helper";
+import { config } from "../config/config";
+
+// import { utilityHelper } from "./utility.helper";
 
 class DbHelper {
 
-    public async getCoinData(
-        coinType: string,
-        coinFamily: number
-    ): Promise<CoinInterface | null> {
-        let result: CoinInterface | null = await CoinsModel.findOne({
-            where: { coin_symbol: coinType, coin_family: coinFamily },
-        });
-        if (result) return result;
-        else return null;
+    // public async getCoinData(
+    //     coinType: string,
+    //     coinFamily: number
+    // ): Promise<CoinInterface | null> {
+    //     let result: CoinInterface | null = await CoinsModel.findOne({
+    //         where: { coin_symbol: coinType, coin_family: coinFamily },
+    //     });
+    //     if (result) return result;
+    //     else return null;
+    // }
+
+    // public async getWalletInfoByAddressAndCoinId(
+    //     wallet_address: string,
+    //     coin_id: number | undefined
+    // ) {
+    //     try {
+    //         let queryRes: any = await WalletModel.findOne({
+    //             where: { wallet_address, coin_id },
+    //         });
+    //         if (queryRes) return queryRes;
+    //         else return null;
+    //     } catch (error) {
+    //         return null;
+    //     }
+    // }
+
+    /** list of all active crypto coins */
+    // ActiveCoinsListQry = async () => {
+    //     try {
+    //         return await CoinsModel.findAll({
+    //             where: {
+    //                 coin_status: BooleanEnum.true,
+    //             }
+    //         });
+    //     } catch (error: any) {
+    //         console.error(`dbHelper ActiveCoinsList error >>> \n `, error);
+    //         return {};
+    //     }
+    // }
+
+    /** list of all crypto coins with token  */
+    // TokenListQry = async (
+    //     coin_family: CoinFamilyEnum,
+    //     token_standard: TokenStandard
+    // ) => {
+    //     try {
+    //         return await CoinsModel.findAll({
+    //             attributes: [
+    //                 'id',
+    //                 'coin_name',
+    //                 'coin_symbol',
+    //                 'price_source_slug',
+    //                 'coin_image',
+    //                 'coin_family',
+    //                 'is_token',
+    //                 'token_address',
+    //                 'token_type',
+    //                 'decimals',
+    //                 'coin_status',
+    //                 // 'default_wallet',
+    //                 'price_source'
+    //             ],
+    //             where: {
+    //                 coin_status: BooleanEnum.true,
+    //                 is_token: BooleanEnum.true,
+    //                 coin_family: coin_family,
+    //                 token_type: token_standard
+    //             },
+    //             raw: true
+    //         });
+    //     } catch (error: any) {
+    //         console.error(`DbHelper TokenListQry error >>> \n `, error);
+    //         return {};
+    //     }
+    // }
+
+    public async checkCoinInWallet(
+        walletAddress: string,
+        coin: CoinInterface,
+        balance: any
+    ): Promise<void | Error> {
+        try {
+            // Fetch wallet if already exists
+            let walletData = await WalletModel.findOne({
+                attributes: ["balance", "user_id", "wallet_name"],
+                where: {
+                    wallet_address:walletAddress,
+                    coin_id: coin.coin_id,
+                },
+                raw: true,
+            });
+
+            // If wallet not found, check if it belongs to us and create it
+            if (!walletData) {
+                const walletExist = await bscProcessHelper.checkOurWalletAddress(walletAddress);
+
+                if (walletExist) {
+                    const dataObj = {
+                        user_id: walletExist.user_id,
+                        wallet_name: walletExist.wallet_name,
+                        wallet_address:walletAddress,
+                        coin_id: coin.coin_id,
+                        coin_family: coin.coin_family,
+                        balance: balance ?? 0,
+                        status: 1,
+                    };
+
+                    walletData = await WalletModel.create(dataObj, { raw: true }) as any;
+                    console.log("Wallet created >>", walletData);
+                }
+            }
+
+            // If wallet exists and coin is user-added, check custom tokens
+            if (walletData && coin.added_by === "user") {
+                const userExist = await CustomTokennModel.findOne({
+                    attributes: ["id"],
+                    where: { user_id: walletData.user_id, coin_id: coin.coin_id },
+                    raw: true,
+                });
+
+                if (!userExist) {
+                    console.log("Custom token does not exist, creating...");
+
+                    const currentUTCDate: string = new Date()
+                        .toISOString()
+                        .replace(/T/, " ")
+                        .replace(/\..+/, "");
+
+                    await CustomTokennModel.create({
+                        coin_id: coin.coin_id,
+                        user_id: walletData.user_id,
+                        created_at: currentUTCDate,
+                        updated_at: currentUTCDate,
+                    });
+                } else {
+                    console.log("Custom token already exists");
+                }
+            } else if (!coin.added_by) {
+                console.log("coin.added_by does not exist");
+            }
+
+        } catch (err: any) {
+            console.error("Error in checkCoinInWallet >>>", err);
+            return err;
+        }
     }
 
-    public async getWalletInfoByAddressAndCoinId(
-        wallet_address: string,
-        coin_id: number | undefined
-    ) {
+    public async saveErrorLogs(fn_name: string, error_message: any) {
         try {
-            let queryRes: any = await WalletModel.findOne({
-                where: { wallet_address, coin_id },
-            });
-            if (queryRes) return queryRes;
-            else return null;
-        } catch (error) {
+            const valueExist: any = await bscProcessHelper.getKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.BSC_ERROR_LOGS)
+            if (valueExist) {
+                if (Number(valueExist) == 0) {
+                    await CatchErrorMsgsModel.create({
+                        fx_name: fn_name,
+                        error_msg: error_message || {}
+                    })
+                    await bscProcessHelper.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.BSC_ERROR_LOGS, '1')
+                } else {
+                    console.log("value other than 0 exist")
+                }
+            } else {
+                await bscProcessHelper.setKeyValuePair(config.REDISKEYS.ALL_PROCESSES, config.REDISKEYS.BSC_ERROR_LOGS, '0')
+                console.log("value does not exist")
+            }
+        } catch (err: any) {
+            console.error("Error in saveErrorLogs", err)
+        }
+    }
+
+    public async coinCreate(obj: any) {
+        try {
+            const data: any = await CoinsModel.create(obj);
+            return data;
+        } catch (err: any) {
+            console.error("Error in coin_create>>", err);
+
+            const uniqueConstraint =
+                err.name === 'SequelizeUniqueConstraintError' &&
+                err.errors?.some(
+                    (e: any) => e.path === 'unique_coinfamily_tokenaddress' || e.message?.includes('unique_coinfamily_tokenaddress')
+                );
+
+            if (uniqueConstraint) {
+                const tokenAddress = obj.token_address;
+                const coinFamily = obj.coin_family;
+
+                try {
+                    const existing = await CoinsModel.findOne({
+                        where: {
+                            token_address: tokenAddress,
+                            coin_family: coinFamily,
+                        },
+                        raw: true
+                    });
+                    console.log("🚀 ~ CoinQueries ~ coin_create ~ existing:", existing)
+
+                    if (existing) {
+                        return existing;
+                    }
+                } catch (findErr) {
+                    console.error("Error finding existing coin>>", findErr);
+                    await this.saveErrorLogs("coin_create_find_existing", (findErr as any).message);
+                }
+            }
+
+            await this.saveErrorLogs("coin_create", err.message);
             return null;
         }
     }
 
-    /** list of all active crypto coins */
-    ActiveCoinsListQry = async () => {
+    public async customTokenCreate(obj: any) {
         try {
-            return await CoinsModel.findAll({
-                where: {
-                    coin_status: BooleanEnum.true,
-                }
-            });
-        } catch (error: any) {
-            console.error(`Db_Helper ActiveCoinsList error >>> \n `, error);
-            return {};
+            const data: any = await CustomTokennModel.create(obj)
+            return data;
+        } catch (err: any) {
+            console.error("Error in custom_token_create>>", err);
+            await this.saveErrorLogs("custom_token_create", err.message);
+            return null;
         }
     }
-
-    /** list of all crypto coins with token  */
-    TokenListQry = async (
-        coin_family: CoinFamilyEnum,
-        token_standard: TokenStandard
-    ) => {
-        try {
-            return await CoinsModel.findAll({
-                attributes: [
-                    'id',
-                    'coin_name',
-                    'coin_symbol',
-                    'price_source_slug',
-                    'coin_image',
-                    'coin_family',
-                    'is_token',
-                    'token_address',
-                    'token_type',
-                    'decimals',
-                    'coin_status',
-                    // 'default_wallet',
-                    'price_source'
-                ],
-                where: {
-                    coin_status: BooleanEnum.true,
-                    is_token: BooleanEnum.true,
-                    coin_family: coin_family,
-                    token_type: token_standard
-                },
-                raw: true
-            });
-        } catch (error: any) {
-            console.error(`DbHelper TokenListQry error >>> \n `, error);
-            return {};
-        }
-    }
-
     /** get user device token using user id */
-    GetDeviceTokens = async (user_id: number, address: string, coin_family: number) => {
+    getDeviceTokens = async (user_id: number, address: string, coin_family: number) => {
         try {
             return await DeviceTokenModel.findAll({
                 attributes: ["device_token"],
@@ -228,4 +380,4 @@ class DbHelper {
     // }
 
 }
-export let Db_Helper = new DbHelper();
+export let dbHelper = new DbHelper();
