@@ -38,7 +38,7 @@ class BSCStartProcess {
   //   }, 700);
   // }
 
-  
+
 
 
   // Need to discuess this with team
@@ -54,7 +54,7 @@ class BSCStartProcess {
   private readBlockProcess() {
     setInterval(async () => {
       await readBlockProcess.readCurrentBlocks();
-    }, 700);
+    }, 400);
   }
 
   private readBehinedBlockProcess() {
@@ -63,7 +63,7 @@ class BSCStartProcess {
     });
   }
 
-  
+
   private readSpecificBlock() {
     console.log("readSpecificBlock started after 1 min 🔆🔆🔆");
     schedule.scheduleJob('*/15 * * * * *', async function () {
@@ -110,7 +110,7 @@ class BSCStartProcess {
   //   });
   // }
 
-  
+
 
 
 

@@ -476,7 +476,7 @@ class ReadBlockTrnxProcess {
     public collectCalls(calls: any[], depth: number = 0, results: any[] = [], txHash?: string): any[] {
         for (const call of calls) {
             if (call?.error) {
-                console.log("(call?.error", call?.error, 'txHash >>>', txHash);
+                //console.log("(call?.error", call?.error, 'txHash >>>', txHash);
             } else {
                 if (call?.value && Number(call.value) > 0) {
                     results.push({
@@ -523,7 +523,7 @@ class ReadBlockTrnxProcess {
                         allCalls.push(...collected);
                     }
                 } else {
-                    console.log("(result?.error", result?.error, 'trace.txHash <<', trace.txHash);
+                    //console.log("(result?.error", result?.error, 'trace.txHash <<', trace.txHash);
                 }
             }
         }
@@ -534,7 +534,7 @@ class ReadBlockTrnxProcess {
 
     public getTraceBlock = async (blockId: number) => {
         try {
-            console.log("INSIDE getTraceBlock", blockId);
+            // console.log("INSIDE getTraceBlock", blockId);
 
             const hexBlockValue = ethers.toBeHex(blockId.toString());
             const formattedBlockValue = hexBlockValue.replace(/^0x0+/g, '0x');
