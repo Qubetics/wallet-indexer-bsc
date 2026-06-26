@@ -14,6 +14,7 @@ export const config = {
   MIN_BLOCK_CONFORMATIONS: zookeeperConfig.config.MIN_BSC_BLOCK_CONFORMATIONS,
   TOKEN_TYPE_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_BSC}`,
   STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
+  GAS_FEE_API_KEY: zookeeperConfig.config.ETH_GAS_FEE_API_KEY,
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
     // OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
@@ -23,7 +24,8 @@ export const config = {
     ALL_PROCESSES: zookeeperConfig.config.ALL_PROCESSES,
     BSC_ERROR_LOGS: zookeeperConfig.config.BSC_ERROR_LOGS,
     NODE_ALERT_BSC: zookeeperConfig.config.NODE_ALERT_BSC,
-    SPECIFIC_BLOCK_BSC: zookeeperConfig.config.SPECIFIC_BLOCK_BSC
+    SPECIFIC_BLOCK_BSC: zookeeperConfig.config.SPECIFIC_BLOCK_BSC,
+    FAKE_TOKENS: `${name}_${zookeeperConfig.config.SERVER}_bsc_fake_tokens`,
   },
 
   MORALIS_TRADINGVIEW_TOPIC: zookeeperConfig.config.MORALIS_TRADING_VIEW_TOPIC,

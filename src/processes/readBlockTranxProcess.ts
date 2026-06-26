@@ -10,7 +10,7 @@ import { utilityHelper } from "../helpers/utility.helper";
 import { TokenData } from "../interfaces/ether.interface";
 import { TrnxTypeEnum } from "../enum";
 import { TxType } from "../types/ERC20Tokens.types";
-
+import { isValidToken } from "../helpers/validToken.helper";
 
 
 class ReadBlockTrnxProcess {
@@ -716,6 +716,14 @@ class ReadBlockTrnxProcess {
                                 console.log("contractInfo not exist in db 💥💥 inserting into db", log.address)
                                 const tokenDetail: TokenData | null = await blockchainHelper.tokenDetails(log.address);
                                 if (tokenDetail) {
+                                    //here we need to check valid token address
+                                    const isValidTokenAddress: boolean = await isValidToken(log.address);
+
+                                    //if not valid token address, return
+                                    if (!isValidTokenAddress) {
+                                        return;
+                                    }
+
                                     const contractInfo = await bscProcessHelper.insertTokenAddressInDB(log.address, tokenDetail, nativeWalletData);
                                     if (contractInfo) {
                                         await this.processNotExistTokenTransfer(log, gasInfo, contractInfo, TrnxTypeEnum.DEPOSIT)
