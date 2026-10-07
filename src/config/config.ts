@@ -14,6 +14,7 @@ export const config = {
   MIN_BLOCK_CONFORMATIONS: zookeeperConfig.config.MIN_BSC_BLOCK_CONFORMATIONS,
   TOKEN_TYPE_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_BSC}`,
   STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
+  FIREBASE_SERVICE_ACCOUNT: zookeeperConfig.config.FIREBASE_SERVICE_ACCOUNT,
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
     // OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
