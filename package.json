@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "tsc",
     "server": "nodemon --max-old-space-size=2048 build/index.bsc.js",
-    "dev": "concurrently \"npm run compile\" \"npm run server\"",
+    "dev": "npm run compile && npm run server",
     "start": "npm run compile && node build/index.bsc.js",
     "test": "tsc && node --test test/*.test.js"
   },
