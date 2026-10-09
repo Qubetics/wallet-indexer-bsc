@@ -37,8 +37,6 @@ class TraceBlockBscProcess {
 
           eachMessage: async ({ topic, partition, message }: { topic: any; partition: any; message: any }) => {
             try {
-              // console.log("🚀 ~ startTraceBlockEthProcess topic >>>>", topic);
-              // console.log("🚀 ~ startTraceBlockEthProcess message.value >>>>", message.value.toString());
               await readBlockTrnxProcess.checkBnbDeposit(JSON.parse(message.value.toString()))
 
             } catch (error) {
