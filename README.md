@@ -1,2 +1,2 @@
-# Qubetic Eth Processes
+# Qubetics BSC Processes
 
