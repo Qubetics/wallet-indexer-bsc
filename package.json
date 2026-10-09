@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "tsc",
     "server": "nodemon --max-old-space-size=2048 build/index.bsc.js",
-    "dev": "concurrently \"npm run compile\" \"npm run server\"",
+    "dev": "npm run compile && npm run server",
     "start": "npm run compile && cp -r bn.js ./node_modules/number-to-bn/node_modules/bn.js/lib && node build/index.bsc.js"
   },
   "keywords": [
