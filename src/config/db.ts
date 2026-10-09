@@ -60,9 +60,6 @@ class Database implements DBInterface {
       });
   }
 
-  public async syncTables() {
-    await this.db_write.sync({ alter: true });
-  }
 }
 const db = new Database();
 export default {
