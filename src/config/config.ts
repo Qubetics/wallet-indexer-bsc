@@ -17,8 +17,6 @@ export const config = {
   GAS_FEE_API_KEY: zookeeperConfig.config.ETH_GAS_FEE_API_KEY,
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
-    // OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
-    // NEW_BLOCK_BSC: zookeeperConfig.config.NEW_BLOCK_BSC,
     START_BLOCK: 'start_block',
     END_BLOCK: 'end_block',
     ALL_PROCESSES: zookeeperConfig.config.ALL_PROCESSES,

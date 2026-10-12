@@ -11,7 +11,6 @@ import {
 import schedule from "node-schedule";
 class BSCStartProcess {
   constructor() {
-    // this.read_block_process();
     this.connectKafka();
     this.readBlockProcess();
     this.readBehinedBlockProcess();
@@ -27,30 +26,8 @@ class BSCStartProcess {
   private async connectKafka() {
     await kafkaHelper.connect();
   }
-  // public read_block_process() {
-  //   schedule.scheduleJob("* * * * * *", async function () {
-  //     await bsc_blocks_process.getBlocks();
-  //   });
-  // }
-  // private readBlockProcess() {
-  //   setInterval(async () => {
-  //     await bscBlocksProcess.getBlocks();
-  //   }, 700);
-  // }
 
 
-
-
-  // Need to discuess this with team
-  // private startBlocksConsumers() {
-  //   setTimeout(async () => {
-  //     // console.log("consume_read_block_queue >>>>>>");
-  //     readBlockTrnxProcess.startLatestBlockEvenConsumer();
-  //     readBlockTrnxProcess.startLatestBlockOddConsumer();
-  //     readBlockTrnxProcess.startBehindBlockConsumer();
-  //     // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
-  //   }, 1000);
-  // }
   private readBlockProcess() {
     setInterval(async () => {
       await readBlockProcess.readCurrentBlocks();
@@ -68,7 +45,6 @@ class BSCStartProcess {
     console.log("readSpecificBlock started after 1 min 🔆🔆🔆");
     schedule.scheduleJob('*/15 * * * * *', async function () {
 
-      // schedule.scheduleJob('*/1 * * * *', async function () {
 
       await readBlockTrnxProcess.readSpecificBlock();
     })
@@ -83,46 +59,12 @@ class BSCStartProcess {
 
   private startBlocksConsumers() {
     setTimeout(async () => {
-      // console.log("consume_read_block_queue >>>>>>");
       readBlockTrnxProcess.startLatestBlockEvenConsumer();
       readBlockTrnxProcess.startLatestBlockOddConsumer();
       readBlockTrnxProcess.startBehindBlockConsumer();
-      // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
     }, 1000);
   }
 
-  // public read_behined_block_process() {
-  //   schedule.scheduleJob("*/2 * * * * *", async function () {
-  //     await bsc_blocks_process.readBehindBlock();
-  //   });
-  // }
-  // public testing_node() {
-  //   schedule.scheduleJob("*/2 * * * * *", async function () {
-  //     await bsc_blocks_process.testingNode();
-  //   });
-  // }
-
-
-  //old code
-  // public readSpecificBlock() {
-  //   schedule.scheduleJob("*/1 * * * *", async function () {
-  //     await readBlockTrnxProcess.readSpecificBlock();
-  //   });
-  // }
-
-
-
-
-
-
-  // public startBlockTrxConsumers() {
-  //   setTimeout(async () => {
-  //     // console.log("consume_read_block_queue >>>>>>");
-  //     await readTransactionsProcess.startBlockTxConsumer();
-  //     await readTransactionsProcess.startBehindBlockTxConsumer();
-  //     // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
-  //   }, 1000);
-  // }
 
   private async startDepositWithdrawConsumer() {
     setTimeout(async () => {
