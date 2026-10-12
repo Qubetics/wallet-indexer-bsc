@@ -253,7 +253,7 @@ class BscProcessHelper {
           end_block: behindBlocks.end_block,
           diff: behindBlocks.end_block - behindBlocks.start_block
         }
-        let dataaaaa_exist: any = await this.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(add_data))
+        await this.setKeyValuePair(config.BLOCKS, config.READ_BEHINED_BLOCK_BSC, JSON.stringify(add_data));
       } else {
         console.log("you have not any behind block yet")
       }
