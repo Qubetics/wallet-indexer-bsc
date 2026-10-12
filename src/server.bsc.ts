@@ -32,11 +32,6 @@ class BSCStartProcess {
     });
   }
 
-  // public testing_node() {
-  //   schedule.scheduleJob("*/2 * * * * *", async function () {
-  //     await bsc_blocks_process.testingNode();
-  //   });
-  // }
 
   public readSpecificBlock() {
     // 1 minute

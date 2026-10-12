@@ -83,9 +83,7 @@ class BSCBlockProcess {
     }
     public async getTxFromBlock(blockId: number, key: string) {
         try {
-            // console.error("In getTxFromBlock>>999999999999999999999.", key, blockId)
             const blockInfo = await blockChainHelper.provider.getBlock(blockId, true);
-            // console.log("this is blockInfo>>>>", blockInfo)
             if (!blockInfo) {
                 console.log("No block info");
                 await bscOldBLockModel.create({
@@ -98,7 +96,6 @@ class BSCBlockProcess {
                 return;
             }
             const transactions = blockInfo.prefetchedTransactions || [];
-            // console.log("this is transactions>>>>", transactions)
             if (transactions.length === 0) {
                 console.log("No block info transactions");
                 return;
@@ -120,8 +117,6 @@ class BSCBlockProcess {
                 const targetTopic = (key === KEYS.latestBlock) ? this.bsc_block_tx_topic : this.bsc_behind_block_tx_topic;
 
                 try {
-                    // console.log("this is data & targetTopic if behind producing  **********>>>>", data, targetTopic)
-                    // console.log("this is data & targetTopic>>>>", data, targetTopic)
                     await kafkaHelper.produceMessage(targetTopic, data);
                 } catch (err) {
                     console.error("Error while producing message for transaction", tx.hash, err);
@@ -189,41 +184,8 @@ class BSCBlockProcess {
             console.error("Error in readSpecificBlock>>>", error)
         }
     }
-    // public async testingNode() {
-    //     try {
-    //         const provider = blockChainHelper.provider;
 
-    //         // Get Block Number
-    //         const latestBlock = await provider.getBlockNumber();
-    //         console.log("Block number>>", latestBlock);
 
-    //         const blockInfo = await provider.getBlock(latestBlock, true);
-    //         console.log("blockInfo>>", blockInfo);
-
-    //         if (blockInfo && blockInfo.transactions.length > 0) {
-    //             let firstTxHash: string;
-    //             const firstTx = blockInfo.transactions[0];
-
-    //             if (typeof firstTx === 'string') {
-    //                 firstTxHash = firstTx;
-    //             } else {
-    //                 // Assert the type to access the hash property safely
-    //                 firstTxHash = (firstTx as ethers.TransactionResponse).hash;
-    //             }
-    //             // Get Block Receipt
-    //             const txReceipt = await provider.getTransactionReceipt(firstTxHash);
-    //             console.log("txreceipt>>", txReceipt);
-
-    //             // Get more details (not reduced in ethers.js)
-    //             const transaction = await provider.getTransaction(firstTxHash);
-    //             console.log("transaction>>", transaction);
-    //         } else {
-    //             console.log("No transactions found in the block");
-    //         }
-    //     } catch (err: any) {
-    //         console.error("Error in testingNode>>", err)
-    //     }
-    // }
 }
 
 export const bscBlocksProcess = new BSCBlockProcess();

@@ -190,7 +190,6 @@ class ProcessedBlocksTransactions {
 
     public async readTrnx(data: blocksTrnx) {
         try {
-            // console.log("this is data read trnx >>>>", data)
             const txReceipt: TransactionReceipt | null = await blockChainHelper.provider.getTransactionReceipt(data.tx_id);
             if (txReceipt == null && Number(data.retry_count) < 6) {
                 data.retry_count = Number(data.retry_count) + 1;
