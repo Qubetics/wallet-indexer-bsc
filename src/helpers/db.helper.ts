@@ -5,13 +5,7 @@ import {
     TokenStandard,
 } from "../enum";
 
-import {
-    CoinInterface,
-    catchErrorMsgsModel,
-    coinsModel,
-    deviceTokenModel,
-    walletModel
-} from "../models/index";
+import { CoinInterface, coinsModel, deviceTokenModel, walletModel } from "../models/index";
 
 class DbHelper {
 
