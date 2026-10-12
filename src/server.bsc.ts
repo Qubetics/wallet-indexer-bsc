@@ -18,7 +18,6 @@ class BSCStartProcess {
     this.updateTxStatusProcess();
     this.updateBalanceConsumer();
     this.updateBalanceByWallet();
-    // this.testing_node()
   }
   public read_block_process() {
     schedule.scheduleJob("* * * * * *", async function () {
@@ -30,11 +29,6 @@ class BSCStartProcess {
       await bsc_blocks_process.readBehindBlock();
     });
   }
-  // public testing_node() {
-  //   schedule.scheduleJob("*/2 * * * * *", async function () {
-  //     await bsc_blocks_process.testingNode();
-  //   });
-  // }
   public readSpecificBlock() {
     schedule.scheduleJob("*/1 * * * *", async function () {
       await bsc_blocks_process.readSpecificBlock();
@@ -45,7 +39,6 @@ class BSCStartProcess {
       console.log("consume_read_block_queue >>>>>>");
       await bsc_tx_status_deposit_withdraw.startBlockTxQueue();
       await bsc_tx_status_deposit_withdraw.startBehindBlockTxQueue();
-      // await bsc_tx_status_deposit_withdraw.consume_queue_trnx();
     }, 5000);
   }
   public async bscWithdrawDepositProcess() {

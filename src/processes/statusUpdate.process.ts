@@ -109,8 +109,6 @@ class BscTxStatusUpdateProcess {
       }
       console.log('coin_data >>', coin_data);
       if (coin_data) {
-        // let coin_data: any = await bscProcessHelper.CoinByCoinId(txData.coin_id);
-        // const coin_data: any = await CoinsModel.findOne({ attributes: ['is_token', 'token_type', 'coin_symbol', 'coin_family', 'cmc_id', 'coin_symbol', 'added_by'], where: { coin_id: txData.coin_id } });
         const trx_data = {
           coin_id: txData?.coin.coin_id,
           status: txData?.status,
@@ -134,7 +132,6 @@ class BscTxStatusUpdateProcess {
       } else {
         console.log('coin does not exists', coin_data);
       }
-
 
 
     } catch (err: any) {

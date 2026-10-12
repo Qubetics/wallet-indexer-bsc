@@ -59,7 +59,6 @@ class BlockchainHelper {
         } catch (err: any) {
             console.error(`BscHelper BEP20_Token_Fetch_Balance error >>`, err);
             return null;
-            // throw err;
         }
     }
 
@@ -74,7 +73,6 @@ class BlockchainHelper {
         } catch (err: any) {
             console.error(`Bsc_Helper Coin_Fetch_Balance error >>`, err);
             return null;
-            // throw err;
         }
     }
 
