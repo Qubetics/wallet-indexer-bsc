@@ -1,5 +1,5 @@
 import database from "../config/db";
-import Sequelize, { QueryTypes } from "sequelize";
+import { QueryTypes } from "sequelize";
 import { CoinInterface, CoinsModel, BscOldBLockModel, WalletInterface } from "../models";
 import redisClient from "../config/redis";
 import { promisify } from "util";
