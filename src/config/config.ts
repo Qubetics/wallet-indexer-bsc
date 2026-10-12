@@ -7,10 +7,7 @@ export const config = {
   DB_NAME: zookeeperConfig.config.DB_NAME,
   DB_PASSWORD: zookeeperConfig.config.DB_PASSWORD,
   DB_PORT: zookeeperConfig.config.DB_PORT,
-  // DEPOSIT_WITHDRAW_PROCESS_BSC: zookeeperConfig.config.DEPOSIT_WITHDRAW_PROCESS_BSC,
   BSC_WALLET_ADDRESS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_WALLET_ADDRESS}`,
-  // PENDING_WITHDRAWAL_TX_PROCESS_BSC: zookeeperConfig.config.PENDING_WITHDRAWAL_TX_PROCESS_BSC,
-  // RABBIT_MQ: zookeeperConfig.config.RABBIT_MQ,
   KAFKA_BROKER: zookeeperConfig.config.KAFKA_BROKER,
   KAFKA_CLIENT_ID: zookeeperConfig.config.KAFKA_CLIENT_ID,
   REDIS_CONN: zookeeperConfig.config.REDIS_CONN,
@@ -18,11 +15,6 @@ export const config = {
   TOKEN_TYPE_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_BSC}`,
   TOKEN_TYPE721_BSC: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE721_BSC}`,
   STATIC_COIN_FAMILY: zookeeperConfig.config.STATIC_COIN_FAMILY,
-  //BSC_ADDRESSES_PENDING_BALANCE_UPDATE: zookeeperConfig.config.BSC_ADDRESSES_PENDING_BALANCE_UPDATE,
-  // added new
-  // KEYS: {
-  //   FCM_PUSH: zookeeperConfig.config.FCM_PUSH
-  // },
   REDISKEYS: {
     BSC_BLOCKS: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_BLOCKS} `,
     OLD_BLOCK_BSC: zookeeperConfig.config.OLD_BLOCK_BSC,
@@ -55,11 +47,6 @@ export const config = {
     BSC_PENDING_BALANCE_UPDATE_GROUP_ID: zookeeperConfig.config.BSC_PENDING_BALANCE_UPDATE_GROUP_ID
   },
 
-  // TRANSACTIONS: {
-  //   bsc_all_blocks: zookeeperConfig.config.bsc_all_blocks,
-  //   bsc_behined_transactions: zookeeperConfig.config.bsc_behined_transactions,
-  //   bsc_transaction_consumer_count: zookeeperConfig.config.bsc_transaction_consumer_count
-  // },
   MAILGUN: {
     MAILGUN_API_KEY: zookeeperConfig.config.MAILGUN_API_KEY,
     MAILGUN_DOMAIN: zookeeperConfig.config.MAILGUN_DOMAIN,
