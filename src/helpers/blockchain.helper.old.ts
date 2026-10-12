@@ -3,7 +3,6 @@ import { BooleanEnum, TokenStandard } from "../enum";
 import { Utility_Helper } from "./utility.helper";
 import { config } from '../config';
 import { AbiItem } from 'web3-utils';
-import { ethers } from 'ethers';
 
 class BlockchainHelper {
     public BSC_Web3: Web3;
