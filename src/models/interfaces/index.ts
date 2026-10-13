@@ -4,6 +4,5 @@ export { DeviceTokenInterface } from './interface.deviceTokens';
 export { ITrnxHistoryInterface } from './interface.trnxHistory';
 export { WalletInterface } from './interface.wallets';
 export { BscOldBlockInterface } from './interface.bscOldBlock';
-export { SettingsInterface } from './interface.settings';
 export { CatchErrorMsgsInterface } from './interface.catchErrorLogs';
 export { CustomTokenInterface } from './interface.customTokens';
