@@ -10,6 +10,7 @@ import { TokenData } from "../interfaces/ether.interface";
 import { TrnxTypeEnum } from "../enum";
 import { TxType } from "../types/ERC20Tokens.types";
 import { isValidToken } from "../helpers/validToken.helper";
+import BigNumber from "bignumber.js";
 
 
 class ReadBlockTrnxProcess {
