@@ -9,6 +9,7 @@ import { utilityHelper } from "../helpers/utility.helper";
 import { TokenData } from "../interfaces/ether.interface";
 import { TrnxTypeEnum } from "../enum";
 import { TxType } from "../types/ERC20Tokens.types";
+import BigNumber from "bignumber.js";
 
 
 class ReadBlockTrnxProcess {
